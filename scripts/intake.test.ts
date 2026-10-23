@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { gzipSync } from 'node:zlib'
 
 import type { IntakeIO, IssueEvent } from './intake.ts'
-import { runIntake } from './intake.ts'
+import { realIO, reply, runIntake, runSweep } from './intake.ts'
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/squirrel/${name}`, import.meta.url), 'utf8')
 const shareBody = (id: string) => {
@@ -22,7 +22,7 @@ const event = (title: string, body: string | null, number = 5, user = { id: 777,
 const NOW = new Date('2026-10-24T12:00:00Z')
 
 /** 메모리 파일 + 호출 기록 */
-const fakeIO = (files: Record<string, string> = {}, shares = 0) => {
+const fakeIO = (files: Record<string, string> = {}, shares = 0, changed = true) => {
   const calls: string[] = []
   const comments: string[] = []
   const io: IntakeIO = {
@@ -45,6 +45,10 @@ const fakeIO = (files: Record<string, string> = {}, shares = 0) => {
     },
     commit: async message => {
       calls.push(`commit ${message}`)
+      return changed
+    },
+    deploySite: async () => {
+      calls.push('deploy')
     },
   }
   return { io, files, calls, comments }
@@ -120,4 +124,67 @@ test('본문이 셸에 들어가지 않는다', () => {
   assert.ok(!source.includes('execSync('))
   assert.ok(!source.includes('shell: true'))
   assert.ok(source.includes("['issue', 'comment', String(issue), '--repo', repo, '--body-file', '-']"))
+})
+
+test('runSweep: 오래된 것부터, 하나가 실패해도 계속, 게시가 있으면 사이트를 한 번 다시 만든다', async () => {
+  const { io, calls } = fakeIO({ 'registry.json': '{"pets":{}}' })
+  const failing: IntakeIO = { ...io, comment: async (issue, body) => (issue === 6 ? Promise.reject(new Error('gh down')) : io.comment(issue, body)) }
+  const issues = [event('share: cat-b', shareBody('cat-b'), 6).issue, event('share: cat-a', shareBody('cat-a'), 5).issue, event('hello', 'x', 4).issue]
+  const result = await runSweep(issues, failing, NOW)
+  assert.deepEqual(result, { committed: 2, failed: [6] })
+  assert.ok(calls.indexOf('commit share: cat-a (#5)') < calls.indexOf('commit share: cat-b (#6)'))
+  assert.equal(calls.filter(c => c === 'deploy').length, 1)
+  assert.equal(calls.at(-1), 'deploy')
+})
+
+test('runSweep: 거절만 있으면 사이트를 다시 만들지 않는다', async () => {
+  const { io, calls } = fakeIO({ 'registry.json': '{"pets":{}}' })
+  await runSweep([event('share: my-cat', 'no bundle').issue], io, NOW)
+  assert.ok(!calls.includes('deploy'))
+})
+
+test('바뀐 게 없는 다시 올리기: commit이 false여도 댓글과 닫기, 사이트는 다시 만들지 않는다', async () => {
+  const { io, calls } = fakeIO({ 'registry.json': '{"pets":{}}' }, 0, false)
+  await runSweep([event('share: my-cat', shareBody('my-cat')).issue], io, NOW)
+  assert.deepEqual(calls.slice(-2), ['comment', 'close completed'])
+  assert.ok(!calls.includes('deploy'))
+})
+
+test('badFile 댓글은 묶음 속 파일 이름을 그대로 옮기지 않는다', () => {
+  const text = reply({ ok: false, reject: 'badFile', detail: '@everyone [x](https://evil) ' + 'a'.repeat(70000) }, 'my-cat')
+  assert.ok(!text.includes('@everyone'))
+  assert.ok(text.length < 400)
+})
+
+test('realIO.commit: 바뀐 게 없으면 false(오류 없음), 있으면 커밋하고 push', async () => {
+  const { execFileSync } = await import('node:child_process')
+  const { mkdtempSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const base = mkdtempSync(join(tmpdir(), 'intake-git-'))
+  const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+  git(base, 'init', '-q', '--bare', '-b', 'main', 'remote.git')
+  git(base, 'clone', '-q', join(base, 'remote.git'), 'work')
+  const work = join(base, 'work')
+  git(work, 'config', 'user.email', 't@example.com')
+  git(work, 'config', 'user.name', 't')
+  writeFileSync(join(work, 'registry.json'), '{"pets":{}}\n')
+  git(work, 'add', '.')
+  git(work, 'commit', '-q', '-m', 'init')
+  git(work, 'push', '-q', '-u', 'origin', 'main')
+  const io = realIO('ms1011/dotchi-packs', work)
+  assert.equal(await io.commit('nothing'), false)
+  await io.writeText('packs/my-cat/art.json', '{}')
+  assert.equal(await io.commit('share: my-cat (#5)'), true)
+  assert.ok(git(join(base, 'remote.git'), 'log', '--oneline', 'main').includes('share: my-cat (#5)'))
+})
+
+test('워크플로: 접수는 쓸고 지나가는 방식(예약·수동 실행, actions: write), 사이트 배포는 중간에 취소하지 않는다', () => {
+  const intake = readFileSync(new URL('../.github/workflows/intake.yml', import.meta.url), 'utf8')
+  assert.match(intake, /schedule:/)
+  assert.match(intake, /workflow_dispatch:/)
+  assert.match(intake, /actions: write/)
+  assert.match(intake, /^    concurrency:/m)
+  const site = readFileSync(new URL('../.github/workflows/site.yml', import.meta.url), 'utf8')
+  assert.match(site, /cancel-in-progress: false/)
 })

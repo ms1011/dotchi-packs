@@ -1,19 +1,24 @@
-# Issue로 올라온 펫(share:/unshare:)을 검사해 바로 게시하거나 이유를 댓글로 남긴다.
-# Issue 제목과 본문은 run에 끼워 넣지 않고 이벤트 파일에서만 읽는다.
+# 열린 share:/unshare: Issue를 오래된 것부터 모두 처리한다(검사 → 바로 게시, 또는 이유를 댓글로).
+# Issue가 열릴 때, 30분마다(놓친 것·실패한 것 다시), 수동으로 돈다. 게시가 있으면 site 워크플로를 깨운다.
+# Issue 제목과 본문은 run에 끼워 넣지 않고 gh로 받아 스크립트 안에서만 읽는다.
 name: intake
 on:
   issues:
     types: [opened]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
 permissions:
   contents: write
   issues: write
-concurrency:
-  group: intake
-  cancel-in-progress: false
+  actions: write
 jobs:
   intake:
-    if: startsWith(github.event.issue.title, 'share:') || startsWith(github.event.issue.title, 'unshare:')
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, 'share:') || startsWith(github.event.issue.title, 'unshare:')
     runs-on: ubuntu-latest
+    concurrency:
+      group: intake
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:

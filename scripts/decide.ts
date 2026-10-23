@@ -63,7 +63,11 @@ export const decide = (req: Request, registry: Registry, blocked: ReadonlySet<nu
 
   const hash = artHash(pack.art)
   const copied = Object.entries(registry.pets).find(
-    ([id, other]) => id !== req.id && other.state === 'published' && other.ownerId !== req.userId && other.artHash === hash,
+    ([id, other]) =>
+      id !== req.id &&
+      (other.state === 'published' || other.state === 'reserved') &&
+      other.ownerId !== req.userId &&
+      other.artHash === hash,
   )
   if (copied !== undefined) return no({ reject: 'sameArt', detail: copied[0] })
 

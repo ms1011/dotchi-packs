@@ -142,3 +142,21 @@ test('decide는 입력 registry를 바꾸지 않는다', () => {
   decide(req({ kind: 'unshare', body: '' }), registry, new Set(), 0)
   assert.deepEqual(registry, before)
 })
+
+test('예약된 기본 펫의 그림과 같으면 sameArt', () => {
+  const first = decide(req({ id: 'cat-a', userId: OTHER }), empty(), new Set(), 0)
+  assert.ok(first.ok)
+  if (!first.ok) return
+  const hash = first.registry.pets['cat-a']!.artHash
+  const registry: Registry = { pets: { squirrel: entry(64572078, 'reserved', null, hash) } }
+  assert.deepEqual(decide(req({ id: 'my-squirrel' }), registry, new Set(), 0), { ok: false, reject: 'sameArt', detail: 'squirrel' })
+})
+
+test('registry.json의 기본 펫 지문은 플러그인 기본 펫 그림과 같다', async () => {
+  const { artHash } = await import('./bundle.ts')
+  const registry = JSON.parse(readFileSync(new URL('../registry.json', import.meta.url), 'utf8')) as Registry
+  for (const id of ['squirrel', 'turtle']) {
+    const art = JSON.parse(readFileSync(new URL(`../dotchi/characters/${id}/art.json`, import.meta.url), 'utf8'))
+    assert.equal(registry.pets[id]!.artHash, artHash(art), id)
+  }
+})

@@ -84,3 +84,17 @@ test('BUNDLE_FILE은 플러그인의 것과 같다', async () => {
   const plugin = readFileSync(new URL('../dotchi/hooks/share.ts', import.meta.url), 'utf8')
   assert.ok(plugin.includes(`export const BUNDLE_FILE = ${BUNDLE_FILE}`))
 })
+
+test('플러그인과 같은 길: python3 -m gzip으로 만든 묶음을 풀 수 있다', async () => {
+  const { execFileSync } = await import('node:child_process')
+  const { mkdtempSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const dir = mkdtempSync(join(tmpdir(), 'bundle-'))
+  writeFileSync(join(dir, 'pack.json'), JSON.stringify({ format: 1, files: squirrel() }))
+  execFileSync('python3', ['-m', 'gzip', join(dir, 'pack.json')])
+  const base64 = readFileSync(join(dir, 'pack.json.gz')).toString('base64')
+  const files = decodeBundle(base64)
+  assert.ok(!('reject' in files))
+  assert.ok('meta' in checkPack(files as Record<string, string>, 'squirrel'))
+})
