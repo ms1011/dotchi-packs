@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { detectLang, filterPets, installCommand, petFromQuery, pick, sortPets } from '../site/lib.js'
+import { applyLikes, detectLang, filterPets, installCommand, likesFromIssues, petFromQuery, pick, sortPets } from '../site/lib.js'
 
 const pet = (id: string, likes: number, created: string, extra: Record<string, unknown> = {}) => ({
   id, name: { ko: `${id}-ko`, en: `${id}-en` }, description: '', owner: 'o', created, updated: created, frames: 3, langs: ['ko'], frameMs: 250, likes, issue: 1, ...extra,
@@ -54,4 +54,29 @@ test('app.js는 팩 글을 innerHTML로 넣지 않는다', () => {
   const assigns = app.split('\n').filter(line => /innerHTML\s*=/.test(line))
   assert.ok(assigns.length > 0)
   for (const line of assigns) assert.doesNotMatch(line, /pet\.|meta\.|lines|description|owner|name/, line)
+})
+
+test('likesFromIssues: GitHub Issue 목록에서 번호별 👍 수, PR과 모양이 틀린 것은 건너뛴다', () => {
+  const page = [
+    { number: 2, reactions: { '+1': 3, heart: 9 } },
+    { number: 1, reactions: { '+1': 0 } },
+    { number: 5, pull_request: {}, reactions: { '+1': 7 } },
+    { number: 6 },
+    { number: 'x', reactions: { '+1': 1 } },
+  ]
+  assert.deepEqual(likesFromIssues(page), { 2: 3, 1: 0 })
+  assert.deepEqual(likesFromIssues({ message: 'API rate limit exceeded' }), {})
+})
+
+test('applyLikes: 최신 숫자로 바꾸고, 모르는 Issue는 빌드 때 숫자 그대로, 원래 배열은 그대로', () => {
+  const pets = [pet('a', 5, 'x', { issue: 1 }), pet('b', 2, 'x', { issue: 2 })]
+  const next = applyLikes(pets, { 2: 9 })
+  assert.deepEqual(next.map(p => p.likes), [5, 9])
+  assert.deepEqual(pets.map(p => p.likes), [5, 2])
+})
+
+test('app.js는 GitHub API에서 좋아요를 바로 가져온다', () => {
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  assert.ok(app.includes('https://api.github.com/repos/ms1011/dotchi-packs/issues'))
+  assert.ok(app.includes('applyLikes('))
 })

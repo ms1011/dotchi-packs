@@ -42,3 +42,18 @@ export const petFromQuery = search => {
 }
 
 export const installCommand = id => `/dotchi install ${id}`
+
+/** GitHub Issue 목록(REST) 한 페이지에서 Issue 번호 → 👍 수. PR이나 모양이 틀린 항목, 오류 응답은 건너뛴다 */
+export const likesFromIssues = items => {
+  const likes = {}
+  if (!Array.isArray(items)) return likes
+  for (const item of items) {
+    const count = item?.reactions?.['+1']
+    if (item?.pull_request !== undefined || !Number.isInteger(item?.number) || !Number.isInteger(count)) continue
+    likes[item.number] = count
+  }
+  return likes
+}
+
+/** 최신 👍 수로 바꾼 새 목록. 모르는 Issue는 빌드 때 숫자 그대로 */
+export const applyLikes = (pets, likes) => pets.map(pet => (likes[pet.issue] === undefined ? pet : { ...pet, likes: likes[pet.issue] }))

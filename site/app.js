@@ -1,9 +1,12 @@
 // dotchi 펫 사이트: index.json으로 목록을 그리고, 펫의 art.json·lines.json은 필요할 때 받는다.
 // 팩에서 온 글(이름·소개·대사·작성자)은 모두 textContent로만 넣는다. innerHTML은 strings.js 문구와 아이콘뿐
 import { LANG_NAMES, STRINGS } from './strings.js'
-import { detectLang, filterPets, installCommand, LANGS, petFromQuery, pick, sortPets } from './lib.js'
+import { applyLikes, detectLang, filterPets, installCommand, LANGS, likesFromIssues, petFromQuery, pick, sortPets } from './lib.js'
 
 const REPO = 'https://github.com/ms1011/dotchi-packs'
+const ISSUES_API = 'https://api.github.com/repos/ms1011/dotchi-packs/issues'
+/** 좋아요를 다시 물을 최소 간격: 로그인 없는 GitHub API는 IP당 시간당 60번까지라 아껴 쓴다 */
+const LIKES_EVERY_MS = 30000
 const HEART =
   '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>'
 const COPY_ICON =
@@ -308,6 +311,40 @@ document.querySelectorAll('.sort button').forEach(btn =>
 )
 $('q').addEventListener('input', drawList)
 
+/* ---------- 좋아요 ---------- */
+
+let likesAskedAt = 0
+/**
+ * 좋아요(처음 Issue의 👍)를 GitHub API에서 바로 가져온다. 빌드 때 숫자는 예비용:
+ * 한도를 넘었거나 응답이 없으면 그대로 둔다. Issue 100개씩, 필요한 것을 다 찾을 때까지 5페이지까지
+ */
+async function refreshLikes() {
+  if (pets.length === 0 || Date.now() - likesAskedAt < LIKES_EVERY_MS) return
+  likesAskedAt = Date.now()
+  const likes = {}
+  const missing = () => pets.some(pet => likes[pet.issue] === undefined)
+  for (let page = 1; page <= 5 && missing(); page++) {
+    const response = await fetch(`${ISSUES_API}?state=all&per_page=100&page=${page}`, {
+      headers: { Accept: 'application/vnd.github+json' },
+    }).catch(() => null)
+    if (response === null || !response.ok) break
+    const items = await response.json().catch(() => null)
+    Object.assign(likes, likesFromIssues(items))
+    if (!Array.isArray(items) || items.length < 100) break
+  }
+  if (Object.keys(likes).length === 0) return
+  pets = applyLikes(pets, likes)
+  drawList()
+  if (current !== null) {
+    current = pets.find(pet => pet.id === current.id) ?? current
+    $('d-like-n').textContent = t('like')(current.likes)
+  }
+}
+// GitHub에서 👍를 누르고 돌아오면 다시 묻는다
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshLikes()
+})
+
 /* ---------- 시작 ---------- */
 
 applyLang()
@@ -320,6 +357,7 @@ fetch('index.json', { cache: 'no-cache' })
     const wanted = petFromQuery(location.search)
     const pet = pets.find(p => p.id === wanted)
     if (pet !== undefined) openPet(pet)
+    refreshLikes()
   })
   .catch(() => {
     $('duo').hidden = true
