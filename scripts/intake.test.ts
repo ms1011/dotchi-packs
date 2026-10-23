@@ -185,6 +185,8 @@ test('워크플로: 접수는 쓸고 지나가는 방식(예약·수동 실행, 
   assert.match(intake, /workflow_dispatch:/)
   assert.match(intake, /actions: write/)
   assert.match(intake, /^    concurrency:/m)
+  // Issue 이벤트는 Issue가 열린 순간의 커밋을 준다: 앞선 접수가 막 push한 것을 보려면 최신 main을 받아야 한다
+  assert.match(intake, /uses: actions\/checkout@v4\n        with:\n          ref: main\n/)
   const site = readFileSync(new URL('../.github/workflows/site.yml', import.meta.url), 'utf8')
   assert.match(site, /cancel-in-progress: false/)
 })

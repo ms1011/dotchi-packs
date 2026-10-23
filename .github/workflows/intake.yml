@@ -20,8 +20,10 @@ jobs:
       group: intake
       cancel-in-progress: false
     steps:
+      # Issue 이벤트의 기본 커밋은 Issue가 열린 순간의 것이다. 앞선 접수가 push한 것을 보려고 최신 main을 받는다
       - uses: actions/checkout@v4
         with:
+          ref: main
           submodules: true
       - uses: actions/setup-node@v4
         with:
