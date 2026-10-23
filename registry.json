@@ -35,6 +35,15 @@
       "updated": "2026-10-23",
       "artHash": "a4f70d99586242bdb86a35417bb09490af221ccd8ec68191f56aad758677b2e1",
       "state": "published"
+    },
+    "panda": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": 10,
+      "created": "2026-10-23",
+      "updated": "2026-10-23",
+      "artHash": "9f207c3b135c20559e648edd6b43022b88f3e49ac6300f5fd336e057232efca2",
+      "state": "published"
     }
   }
 }

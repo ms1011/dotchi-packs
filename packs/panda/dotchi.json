@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "panda",
+  "name": {
+    "ko": "판다",
+    "en": "Panda",
+    "ja": "パンダ",
+    "zh": "熊猫"
+  },
+  "author": "dotchi",
+  "description": "A laid-back panda from China that munches bamboo while Claude works.",
+  "frameMs": 300
+}
