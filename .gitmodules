@@ -1,3 +1,4 @@
 [submodule "dotchi"]
 	path = dotchi
-	url = /Users/ms/Projects/dotchi
+	url = https://github.com/ms1011/dotchi.git
+	branch = main
