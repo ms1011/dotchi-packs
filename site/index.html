@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dotchi pets</title>
+<meta name="description" content="Pixel pets for Claude Code. Adopt one with /dotchi install, or share your own.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --ink: #23201b;
+  --muted: #7a7266;
+  --line: #e4ddd0;
+  --accent: #d9692b;
+  --accent-ink: #ffffff;
+  --heart: #e0445a;
+  --chip: #efe9de;
+  --code-bg: #23201b;
+  --code-ink: #f6f3ec;
+  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 20px -10px rgba(60,40,10,.25);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17150f; --surface: #221f18; --ink: #f1ece2; --muted: #a39a8b; --line: #36312a;
+    --accent: #f08a4b; --accent-ink: #1b140c; --chip: #2d2920; --code-bg: #0e0d0a; --code-ink: #f1ece2;
+    --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17150f; --surface: #221f18; --ink: #f1ece2; --muted: #a39a8b; --line: #36312a;
+  --accent: #f08a4b; --accent-ink: #1b140c; --chip: #2d2920; --code-bg: #0e0d0a; --code-ink: #f1ece2;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Hiragino Sans", "PingFang SC", "Noto Sans JP", "Noto Sans SC", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+
+/* 상단 바 */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
+.logo { font-family: "DotGothic16", monospace; font-size: 26px; line-height: 1; margin: 0; letter-spacing: 1px; text-decoration: none; }
+.logo b { color: var(--accent); font-weight: 400; }
+.top-right { display: flex; align-items: center; gap: 8px; }
+.lang { position: relative; }
+.lang select {
+  appearance: none; -webkit-appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 13.5px; padding: 7px 30px 7px 32px; border-radius: 9px; cursor: pointer;
+}
+.lang svg { position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); }
+.lang .globe { left: 10px; }
+.lang .chev { right: 10px; }
+.gh { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 9px; }
+.gh:hover, .lang select:hover { border-color: var(--accent); }
+
+/* 소개 */
+.hero { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 32px; align-items: center; padding: 28px 0 36px; }
+.hero h1 { font-size: 34px; line-height: 1.25; margin: 0 0 12px; letter-spacing: -0.5px; }
+.hero p.lead { color: var(--muted); margin: 0 0 20px; max-width: 46ch; }
+.duo { display: flex; justify-content: center; gap: 8px; }
+.duo .stage { width: 46%; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 36px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.step .n { font-family: "DotGothic16", monospace; color: var(--accent); font-size: 14px; }
+.step h3 { margin: 0; font-size: 15.5px; }
+.step p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.cmd { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 4px 4px 4px 12px; display: flex; align-items: center; gap: 6px; margin-top: auto; }
+.cmd code { flex: 1; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.cmd code::-webkit-scrollbar { display: none; }
+.copy {
+  border: 0; border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.copy.sm { background: rgba(255,255,255,.12); color: var(--code-ink); }
+.copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more { font-size: 13.5px; color: var(--muted); }
+:lang(ko) .hero h1, :lang(ko) .hero p.lead, :lang(ko) .step p { word-break: keep-all; }
+
+/* 목록 */
+.section-title { font-size: 20px; margin: 0; }
+.toolbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px 0; border-top: 1px solid var(--line); }
+.search { flex: 1 1 240px; max-width: 360px; position: relative; }
+.search input {
+  width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font: inherit;
+}
+.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.sort { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; }
+.sort button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+.sort button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); font-weight: 600; }
+.count { color: var(--muted); font-size: 13px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; padding-bottom: 56px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px;
+  text-align: left; color: inherit; font: inherit; cursor: pointer; box-shadow: var(--shadow);
+  transition: transform .15s ease, border-color .15s ease; display: flex; flex-direction: column; gap: 10px;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stage {
+  aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background-color: var(--chip);
+  background-image: linear-gradient(45deg, rgba(0,0,0,.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.03) 75%),
+                    linear-gradient(45deg, rgba(0,0,0,.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.03) 75%);
+  background-size: 16px 16px; background-position: 0 0, 8px 8px;
+}
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 75%; height: auto; }
+.card h3 { margin: 0; font-size: 15.5px; }
+.meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
+.likes { display: inline-flex; align-items: center; gap: 4px; }
+.likes svg { color: var(--heart); }
+.new-badge { font-size: 11px; background: var(--accent); color: var(--accent-ink); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; font-weight: 600; }
+.empty { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 48px 0; }
+
+/* 상세 */
+dialog {
+  border: 0; padding: 0; border-radius: 20px; background: var(--surface); color: var(--ink);
+  width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 30px 80px -20px rgba(0,0,0,.5);
+}
+dialog::backdrop { background: rgba(20,16,10,.55); }
+.detail { display: grid; grid-template-columns: 300px minmax(0,1fr); }
+.detail .stage { border-radius: 0; aspect-ratio: auto; min-height: 300px; position: relative; }
+.detail canvas { width: 70%; }
+.bubble {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%); max-width: 90%;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px;
+  font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow);
+}
+.info { padding: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; position: relative; }
+.info h2 { margin: 0; font-size: 24px; padding-right: 36px; }
+.info .by { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.desc { margin: 0; }
+.install { background: var(--code-bg); color: var(--code-ink); border-radius: 12px; padding: 6px 6px 6px 14px; display: flex; align-items: center; gap: 8px; }
+.install code { flex: 1; overflow-x: auto; white-space: nowrap; font-size: 14px; }
+.install .copy { padding: 9px 14px; font-size: 14px; }
+.btn { border: 0; border-radius: 9px; padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.btn-ghost { background: var(--chip); color: var(--ink); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 12.5px; margin: -6px 0 0; }
+.close { position: absolute; top: 14px; right: 14px; background: var(--chip); border: 0; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ink); font-size: 18px; line-height: 1; }
+.facts { display: flex; gap: 6px; flex-wrap: wrap; }
+.facts span { background: var(--chip); border-radius: 6px; padding: 2px 8px; font-size: 12.5px; color: var(--muted); }
+.first-time { background: var(--chip); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+.first-time code { color: var(--ink); }
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; padding: 20px 0 40px; }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: minmax(0,1fr); gap: 20px; padding-top: 12px; }
+  .hero h1 { font-size: 27px; }
+  .duo { order: -1; width: 100%; max-width: 280px; margin: 0 auto; }
+  .steps { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 640px) {
+  .gh span { display: none; }
+  .grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+  .search { flex-basis: 100%; max-width: none; }
+  .toolbar > .row:first-child { flex-wrap: wrap; }
+  .card { padding: 10px; }
+  .detail { grid-template-columns: minmax(0,1fr); }
+  .detail .stage { min-height: 220px; }
+  .detail canvas { width: 45%; }
+}
+
+.need { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; color: var(--muted); border-left: 1px solid var(--line); padding-left: 8px; margin-left: 2px; }
+.notice { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 48px 0; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="logo" href="./">dotchi<b>.</b></a>
+    <div class="top-right">
+      <label class="lang">
+        <svg class="globe" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.8 1.9 2.6 4 2.6 6.2S9.8 12.3 8 14.2C6.2 12.3 5.4 10.2 5.4 8S6.2 3.7 8 1.8Z"/></svg>
+        <select id="lang" aria-label="Language">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+        </select>
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m2 3.5 3 3 3-3"/></svg>
+      </label>
+      <a class="gh" href="https://github.com/ms1011/dotchi" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </div>
+
+  <section class="hero" id="hero">
+    <div>
+      <h1 data-t="heroTitle"></h1>
+      <p class="lead" data-t="heroLead"></p>
+      <a class="more" href="https://github.com/ms1011/dotchi" target="_blank" rel="noopener" data-t="readme"></a>
+    </div>
+    <div class="duo" id="duo">
+      <div class="stage"><canvas id="hero-a" width="32" height="32"></canvas></div>
+      <div class="stage"><canvas id="hero-b" width="32" height="32"></canvas></div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="step">
+      <span class="n">01</span>
+      <h3 data-t="s1Title"></h3>
+      <p data-t="s1Body"></p>
+      <div class="cmd"><code>/plugin install dotchi --marketplace ms1011/dotchi</code><button class="copy sm" data-copy="/plugin install dotchi --marketplace ms1011/dotchi"></button></div>
+    </div>
+    <div class="step">
+      <span class="n">02</span>
+      <h3 data-t="s2Title"></h3>
+      <p data-t="s2Body"></p>
+      <div class="cmd"><code>/dotchi install &lt;id&gt;</code></div>
+    </div>
+    <div class="step">
+      <span class="n">03</span>
+      <h3 data-t="s3Title"></h3>
+      <p data-t="s3Body"></p>
+      <div class="cmd"><code>/dotchi share &lt;id&gt;</code></div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <div class="row" style="gap:16px; flex: 1 1 auto;">
+      <h2 class="section-title" data-t="pets"></h2>
+      <label class="search">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+        <input id="q" type="search">
+      </label>
+    </div>
+    <div class="row">
+      <span class="count" id="count"></span>
+      <div class="sort" role="group">
+        <button data-sort="likes" aria-pressed="true" data-t="sortLikes"></button>
+        <button data-sort="new" aria-pressed="false" data-t="sortNew"></button>
+      </div>
+    </div>
+  </div>
+
+  <main class="grid" id="grid"></main>
+
+  <footer data-t="footer"></footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="d-name">
+  <div class="detail">
+    <div class="stage"><div class="bubble" id="d-bubble"></div><canvas id="d-canvas" width="32" height="32"></canvas></div>
+    <div class="info">
+      <button class="close" id="d-close">×</button>
+      <div>
+        <h2 id="d-name"></h2>
+        <div class="by" id="d-by"></div>
+      </div>
+      <p class="desc" id="d-desc"></p>
+      <div class="facts" id="d-facts"></div>
+      <div class="install"><code id="d-cmd"></code><button class="copy" id="d-copy"></button></div>
+      <p class="hint" data-t="pasteHint"></p>
+      <div class="row">
+        <a class="btn btn-ghost" id="d-like" href="#" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="color:var(--heart)" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>
+          <span id="d-like-n"></span>
+          <span class="need"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span data-t="needGithub"></span></span>
+        </a>
+        <a class="btn btn-ghost" id="d-zip" href="#" download data-t="zip"></a>
+      </div>
+      <p class="hint" data-t="likeHint"></p>
+      <div class="first-time" data-t="firstTime"></div>
+    </div>
+  </div>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
