@@ -80,3 +80,10 @@ test('app.js는 GitHub API에서 좋아요를 바로 가져온다', () => {
   assert.ok(app.includes('https://api.github.com/repos/ms1011/dotchi-packs/issues'))
   assert.ok(app.includes('applyLikes('))
 })
+
+test('좋아요 요청은 브라우저 캐시를 쓰지 않고 매번 GitHub에 확인한다(해제도 바로 보이게)', () => {
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  const call = app.slice(app.indexOf('fetch(`${ISSUES_API}'), app.indexOf('fetch(`${ISSUES_API}') + 200)
+  assert.match(call, /cache: 'no-cache'/)
+  assert.match(app, /const LIKES_EVERY_MS = 10000/)
+})

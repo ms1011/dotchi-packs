@@ -6,7 +6,7 @@ import { applyLikes, detectLang, filterPets, installCommand, LANGS, likesFromIss
 const REPO = 'https://github.com/ms1011/dotchi-packs'
 const ISSUES_API = 'https://api.github.com/repos/ms1011/dotchi-packs/issues'
 /** 좋아요를 다시 물을 최소 간격: 로그인 없는 GitHub API는 IP당 시간당 60번까지라 아껴 쓴다 */
-const LIKES_EVERY_MS = 30000
+const LIKES_EVERY_MS = 10000
 const HEART =
   '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>'
 const COPY_ICON =
@@ -326,6 +326,8 @@ async function refreshLikes() {
   for (let page = 1; page <= 5 && missing(); page++) {
     const response = await fetch(`${ISSUES_API}?state=all&per_page=100&page=${page}`, {
       headers: { Accept: 'application/vnd.github+json' },
+      // GitHub 응답은 60초 캐시라고 오지만, 해제한 👍도 바로 보이게 매번 확인한다(바뀌지 않았으면 304)
+      cache: 'no-cache',
     }).catch(() => null)
     if (response === null || !response.ok) break
     const items = await response.json().catch(() => null)
