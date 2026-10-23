@@ -1,0 +1,98 @@
+{
+  "ko": {
+    "spinner": [
+      "전력 질주 중…",
+      "느릴 줄 알았지?",
+      "슝—",
+      "바람을 가르는 중…",
+      "토끼보다 빠르게…",
+      "급가속 중…"
+    ],
+    "idle": [
+      "느긋…",
+      "천천히 가자~",
+      "등껍질 따뜻해",
+      "후아암",
+      "언제든 달릴 준비"
+    ],
+    "ending": [
+      "골인!",
+      "슝!",
+      "1등!",
+      "벌써 끝!",
+      "거북 최고속!"
+    ]
+  },
+  "en": {
+    "spinner": [
+      "Sprinting at full speed…",
+      "Thought I would be slow?",
+      "Zoom—",
+      "Cutting through the wind…",
+      "Faster than the hare…",
+      "Kicking into high gear…"
+    ],
+    "idle": [
+      "Easy does it…",
+      "Slow and steady~",
+      "Warm shell",
+      "Yaaawn",
+      "Ready to bolt anytime"
+    ],
+    "ending": [
+      "Finish line!",
+      "Zoom!",
+      "First place!",
+      "Done already!",
+      "Top turtle speed!"
+    ]
+  },
+  "ja": {
+    "spinner": [
+      "全力疾走中…",
+      "遅いと思った？",
+      "ビューン—",
+      "風を切って進行中…",
+      "ウサギより速く…",
+      "急加速中…"
+    ],
+    "idle": [
+      "のんびり…",
+      "ゆっくりいこう〜",
+      "甲羅ぽかぽか",
+      "ふわぁ",
+      "いつでも走れるよ"
+    ],
+    "ending": [
+      "ゴール！",
+      "ビューン！",
+      "1位！",
+      "もう終わり！",
+      "カメ最速！"
+    ]
+  },
+  "zh": {
+    "spinner": [
+      "全速冲刺中…",
+      "以为我很慢？",
+      "嗖——",
+      "乘风破浪中…",
+      "比兔子还快…",
+      "急加速中…"
+    ],
+    "idle": [
+      "慢悠悠…",
+      "慢慢来~",
+      "龟壳暖暖的",
+      "哈欠",
+      "随时准备冲刺"
+    ],
+    "ending": [
+      "冲线！",
+      "嗖！",
+      "第一名！",
+      "已经完成！",
+      "乌龟最高速！"
+    ]
+  }
+}
