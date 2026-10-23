@@ -1,0 +1,29 @@
+# Issue로 올라온 펫(share:/unshare:)을 검사해 바로 게시하거나 이유를 댓글로 남긴다.
+# Issue 제목과 본문은 run에 끼워 넣지 않고 이벤트 파일에서만 읽는다.
+name: intake
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: intake
+  cancel-in-progress: false
+jobs:
+  intake:
+    if: startsWith(github.event.issue.title, 'share:') || startsWith(github.event.issue.title, 'unshare:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: node scripts/intake.ts
+        env:
+          GH_TOKEN: ${{ github.token }}
