@@ -17,6 +17,15 @@
       "updated": "2026-10-23",
       "artHash": "3b60c1296f92c7deeb1c0f2f6ad3c5fb233d9ecee4cc9a41ecf20003a0c0c7d8",
       "state": "published"
+    },
+    "tiger": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": 8,
+      "created": "2026-10-23",
+      "updated": "2026-10-23",
+      "artHash": "4339be4e81627b9b20b03c55c44b36b5896bd02bbc37eeb4b815f7d757db663b",
+      "state": "published"
     }
   }
 }

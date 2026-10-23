@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "tiger",
+  "name": {
+    "ko": "호랑이",
+    "en": "Tiger",
+    "ja": "トラ",
+    "zh": "老虎"
+  },
+  "author": "dotchi",
+  "description": "A brave little tiger from Korea that hunts bugs while Claude works.",
+  "frameMs": 220
+}
