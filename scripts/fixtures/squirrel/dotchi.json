@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "squirrel",
+  "name": {
+    "ko": "다람쥐",
+    "en": "Squirrel",
+    "ja": "リス",
+    "zh": "松鼠"
+  },
+  "author": "dotchi",
+  "description": "A busy squirrel that hugs an acorn and gathers ideas while Claude works.",
+  "frameMs": 250
+}

@@ -1,0 +1,22 @@
+{
+  "pets": {
+    "squirrel": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": null,
+      "created": "2026-10-23",
+      "updated": "2026-10-23",
+      "artHash": null,
+      "state": "reserved"
+    },
+    "turtle": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": null,
+      "created": "2026-10-23",
+      "updated": "2026-10-23",
+      "artHash": null,
+      "state": "reserved"
+    }
+  }
+}
