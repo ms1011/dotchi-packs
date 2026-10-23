@@ -3,11 +3,11 @@
     "squirrel": {
       "ownerId": 64572078,
       "ownerLogin": "ms1011",
-      "issue": null,
+      "issue": 1,
       "created": "2026-10-23",
       "updated": "2026-10-23",
       "artHash": "1981aefded4fcf215921dd96dcc9215ae806919899a4eadb3fd423ffbb7c589f",
-      "state": "reserved"
+      "state": "published"
     },
     "turtle": {
       "ownerId": 64572078,
