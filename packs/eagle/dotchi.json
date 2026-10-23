@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "eagle",
+  "name": {
+    "ko": "흰머리수리",
+    "en": "Bald Eagle",
+    "ja": "ハクトウワシ",
+    "zh": "白头海雕"
+  },
+  "author": "dotchi",
+  "description": "A proud bald eagle from the USA that soars over your code.",
+  "frameMs": 180
+}
