@@ -26,6 +26,15 @@
       "updated": "2026-10-23",
       "artHash": "4339be4e81627b9b20b03c55c44b36b5896bd02bbc37eeb4b815f7d757db663b",
       "state": "published"
+    },
+    "shiba": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": 9,
+      "created": "2026-10-23",
+      "updated": "2026-10-23",
+      "artHash": "a4f70d99586242bdb86a35417bb09490af221ccd8ec68191f56aad758677b2e1",
+      "state": "published"
     }
   }
 }

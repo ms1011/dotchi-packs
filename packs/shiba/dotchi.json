@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "shiba",
+  "name": {
+    "ko": "시바견",
+    "en": "Shiba",
+    "ja": "柴犬",
+    "zh": "柴犬"
+  },
+  "author": "dotchi",
+  "description": "A cheerful Shiba Inu from Japan that wags its tail while Claude works.",
+  "frameMs": 200
+}
