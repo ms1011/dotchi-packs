@@ -88,3 +88,10 @@ test('좋아요 요청은 브라우저 캐시를 쓰지 않고 매번 GitHub에 
   assert.match(call, /cache: 'no-cache'/)
   assert.match(app, /const LIKES_EVERY_MS = 10000/)
 })
+
+test('좋아요는 창에 포커스가 돌아올 때와 펫을 열 때도 다시 묻는다', () => {
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  assert.match(app, /window\.addEventListener\('focus', \(\) => refreshLikes\(\)\)/)
+  const openPet = app.slice(app.indexOf('function openPet('), app.indexOf('function fillDetail('))
+  assert.match(openPet, /refreshLikes\(\)/)
+})

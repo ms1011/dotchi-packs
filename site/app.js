@@ -194,6 +194,7 @@ function openPet(pet) {
   fillDetail()
   if (!dlg.open) dlg.showModal()
   setPetInAddress(pet.id)
+  refreshLikes()
 }
 
 function fillDetail() {
@@ -342,10 +343,11 @@ async function refreshLikes() {
     $('d-like-n').textContent = t('like')(current.likes)
   }
 }
-// GitHub에서 👍를 누르고 돌아오면 다시 묻는다
+// GitHub에서 👍를 누르고 돌아오면 다시 묻는다: 탭이 다시 보일 때, 다른 창에서 이 창으로 돌아올 때
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshLikes()
 })
+window.addEventListener('focus', () => refreshLikes())
 
 /* ---------- 시작 ---------- */
 
