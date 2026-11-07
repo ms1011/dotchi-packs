@@ -2,7 +2,20 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { applyLikes, detectLang, filterPets, installCommand, likesFromIssues, petFromQuery, pick, sortPets } from '../site/lib.js'
+import {
+  applyLikes,
+  detectLang,
+  filterPets,
+  installCommand,
+  likesFromIssues,
+  MOODS,
+  petFromQuery,
+  pick,
+  previewOf,
+  sortPets,
+  themeFromQuery,
+  themeInstallCommand,
+} from '../site/lib.js'
 
 const pet = (id: string, likes: number, created: string, extra: Record<string, unknown> = {}) => ({
   id, name: { ko: `${id}-ko`, en: `${id}-en` }, description: '', owner: 'o', created, updated: created, frames: 3, langs: ['ko'], frameMs: 250, likes, issue: 1, ...extra,
@@ -94,4 +107,46 @@ test('좋아요는 창에 포커스가 돌아올 때와 펫을 열 때도 다시
   assert.match(app, /window\.addEventListener\('focus', \(\) => refreshLikes\(\)\)/)
   const openPet = app.slice(app.indexOf('function openPet('), app.indexOf('function fillDetail('))
   assert.match(openPet, /refreshLikes\(\)/)
+})
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const LABELS = { full: '배부름', week: '주간' }
+
+test('themeFromQuery·themeInstallCommand', () => {
+  assert.equal(themeFromQuery('?theme=ocean'), 'ocean')
+  assert.equal(themeFromQuery('?theme=Bad Id'), null)
+  assert.equal(themeFromQuery('?pet=ocean'), null)
+  assert.equal(themeInstallCommand('ocean'), '/dotchi theme install ocean')
+})
+
+test('previewOf: 기본 모양이면 플러그인과 같은 상태 줄, 강조색 pet은 라벤더', () => {
+  const ok = previewOf({}, MOODS[0], LABELS)
+  assert.equal(ok.status, '🐾 ♥♥♡♡♡ 40% · ⚡ 41% · ⎇ main')
+  assert.deepEqual(ok.rows[0], [
+    { text: '(•ᴗ•)', color: '#b8a6ff' },
+    { text: ' 배부름 ', color: '#9a9ab0' },
+    { text: '▰▰▰▰▱▱▱▱▱▱ 40%', color: '#8fd9b6' },
+  ])
+  const danger = previewOf({}, MOODS[2], LABELS)
+  assert.equal(danger.status, '🐾 ♥♥♥♥♥ 93% (×_×) /compact · ⚡ 97% 🥱 · ⎇ main')
+  assert.equal(danger.rows[0]![0]!.color, '#ff8fa3')
+  assert.deepEqual(danger.rows[1]!.at(-1), { text: ' 🥱', color: '#9a9ab0' })
+})
+
+test('previewOf: 테마 모양을 따르고, 색이 이상하면 기본 색으로', () => {
+  const look = {
+    colors: { ok: '#000001', warn: '#000002', danger: 'red', dim: '#000004', accent: '#000005' },
+    faces: { ok: 'A', warn: 'B', danger: 'C' },
+    hearts: ['#', '.'],
+    bar: ['=', '-'],
+    symbols: { week: 'wk', tired: 'zz', reset: '@', time: 't' },
+  }
+  const warn = previewOf(look, MOODS[1], LABELS)
+  assert.equal(warn.status, '🐾 ####. 78% B · wk 83% · ⎇ main')
+  assert.deepEqual(warn.rows[0]![0], { text: 'B', color: '#000002' })
+  assert.deepEqual(warn.rows[1]!.at(-1), { text: ' @ 09:00', color: '#000004' })
+  assert.equal(warn.rows[2]![0]!.text, 't 12m · Opus 5.5 · 1M')
+  assert.equal(previewOf(look, MOODS[2], LABELS).rows[0]![0]!.color, '#ff8fa3')
+  assert.equal(previewOf(look, MOODS[0], LABELS).rows[0]![0]!.color, '#000005')
 })

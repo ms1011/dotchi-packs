@@ -1,7 +1,21 @@
 // dotchi 펫 사이트: index.json으로 목록을 그리고, 펫의 art.json·lines.json은 필요할 때 받는다.
 // 팩에서 온 글(이름·소개·대사·작성자)은 모두 textContent로만 넣는다. innerHTML은 strings.js 문구와 아이콘뿐
 import { LANG_NAMES, STRINGS } from './strings.js'
-import { applyLikes, detectLang, filterPets, installCommand, LANGS, likesFromIssues, petFromQuery, pick, sortPets } from './lib.js'
+import {
+  applyLikes,
+  detectLang,
+  filterPets,
+  installCommand,
+  LANGS,
+  likesFromIssues,
+  MOODS,
+  petFromQuery,
+  pick,
+  previewOf,
+  sortPets,
+  themeFromQuery,
+  themeInstallCommand,
+} from './lib.js'
 
 const REPO = 'https://github.com/ms1011/dotchi-packs'
 const ISSUES_API = 'https://api.github.com/repos/ms1011/dotchi-packs/issues'
@@ -27,6 +41,10 @@ let lang = detectLang({ query: location.search, saved: readSaved(), languages: n
 let sort = 'likes'
 let pets = []
 let current = null
+/** 보고 있는 목록: 펫(pets) 또는 상태 줄 테마(themes) */
+let tab = 'pets'
+let themes = []
+let currentTheme = null
 const t = key => STRINGS[lang][key]
 const localToday = () => {
   const d = new Date()
@@ -107,11 +125,101 @@ const showNotice = key => {
 
 function drawList() {
   stops.splice(0).forEach(stop => stop())
-  const list = sortPets(filterPets(pets, $('q').value), sort)
-  $('count').textContent = t('count')(list.length)
-  if (list.length === 0) return showNotice('empty')
-  grid.replaceChildren(...list.map(card))
+  const isThemes = tab === 'themes'
+  const list = sortPets(filterPets(isThemes ? themes : pets, $('q').value), sort)
+  $('count').textContent = t(isThemes ? 'themeCount' : 'count')(list.length)
+  if (list.length === 0) return showNotice(isThemes ? 'themeEmpty' : 'empty')
+  grid.replaceChildren(...list.map(isThemes ? themeCard : card))
 }
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const span = (text, color, className) => {
+  const el = document.createElement('span')
+  if (className !== undefined) el.className = className
+  if (color !== undefined) el.style.color = color
+  el.textContent = text
+  return el
+}
+
+/** 한 장면(상태 줄 + 패널 카드)을 .term 안에 그린다. 테마에서 온 글자는 textContent로만 */
+function drawMood(box, look, mood, withLabels) {
+  const preview = previewOf(look, mood, { full: t('gaugeFull'), week: t('gaugeWeek') })
+  if (withLabels) {
+    const label = { ok: 'moodOk', warn: 'moodWarn', danger: 'moodDanger' }[mood.level]
+    box.append(span(`${t(label)} · ${t('statusLine')}`, undefined, 'label'))
+  }
+  box.append(span(preview.status, undefined, 'line status'))
+  if (withLabels) box.append(span(t('panel'), undefined, 'label'))
+  for (const row of preview.rows) {
+    const line = span('', undefined, 'line')
+    line.append(...row.map(part => span(part.text, part.color)))
+    box.append(line)
+  }
+}
+
+function themeCard(theme) {
+  const el = document.createElement('button')
+  el.className = 'card tcard'
+  el.innerHTML = '<div class="term"></div><h3><span class="title"></span></h3><div class="meta"><span class="who"></span><span class="likes"></span></div>'
+  drawMood(el.querySelector('.term'), theme.look, MOODS[1], false)
+  el.querySelector('.title').textContent = pick(theme.name, lang)
+  if (theme.created === localToday()) {
+    const badge = document.createElement('span')
+    badge.className = 'new-badge'
+    badge.textContent = 'NEW'
+    el.querySelector('h3').append(badge)
+  }
+  el.querySelector('.who').textContent = `@${theme.owner}`
+  const likes = el.querySelector('.likes')
+  likes.innerHTML = HEART
+  likes.append(String(theme.likes))
+  el.addEventListener('click', () => openTheme(theme))
+  return el
+}
+
+const tdlg = $('tdlg')
+
+function openTheme(theme) {
+  currentTheme = theme
+  fillThemeDetail()
+  if (!tdlg.open) tdlg.showModal()
+  setInAddress('theme', theme.id)
+  refreshLikes()
+}
+
+function fillThemeDetail() {
+  const theme = currentTheme
+  $('t-name').textContent = pick(theme.name, lang)
+  $('t-by').textContent = t('by')(theme.owner, fmtDate(theme.created))
+  $('t-desc').textContent = theme.description || t('noDesc')
+  const box = $('t-preview')
+  box.replaceChildren()
+  for (const mood of MOODS) drawMood(box, theme.look, mood, true)
+  $('t-petnote').hidden = theme.look?.colors?.accent !== 'pet'
+  $('t-cmd').textContent = themeInstallCommand(theme.id)
+  $('t-like-n').textContent = t('like')(theme.likes)
+  $('t-like').href = `${REPO}/issues/${theme.issue}`
+  $('t-json').href = `themes/${theme.id}/theme.json`
+}
+
+tdlg.addEventListener('close', () => {
+  currentTheme = null
+  setInAddress('theme', null)
+})
+tdlg.addEventListener('click', e => {
+  if (e.target === tdlg) tdlg.close()
+})
+$('t-close').addEventListener('click', () => tdlg.close())
+
+function selectTab(next) {
+  tab = next
+  document.querySelectorAll('.tabs button').forEach(btn => btn.setAttribute('aria-selected', String(btn.dataset.tab === tab)))
+  // 테마 탭은 주소에 남겨 링크로 나눌 수 있게 (?tab=themes)
+  setInAddress('tab', tab === 'themes' ? 'themes' : null)
+  drawList()
+}
+document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)))
 
 function card(pet) {
   const el = document.createElement('button')
@@ -182,12 +290,14 @@ const dlg = $('dlg')
 let detailStop = null
 let bubbleTimer = null
 
-function setPetInAddress(id) {
+/** 주소의 ?pet= / ?theme= 를 바꾼다 (공유할 수 있는 주소) */
+function setInAddress(key, id) {
   const url = new URL(location.href)
-  if (id === null) url.searchParams.delete('pet')
-  else url.searchParams.set('pet', id)
+  if (id === null) url.searchParams.delete(key)
+  else url.searchParams.set(key, id)
   history.replaceState(null, '', url)
 }
+const setPetInAddress = id => setInAddress('pet', id)
 
 function openPet(pet) {
   current = pet
@@ -278,6 +388,7 @@ const wireCopy = (btn, getText) =>
   })
 document.querySelectorAll('[data-copy]').forEach(btn => wireCopy(btn, () => btn.dataset.copy))
 wireCopy($('d-copy'), () => $('d-cmd').textContent)
+wireCopy($('t-copy'), () => $('t-cmd').textContent)
 
 /* ---------- 언어·정렬·검색 ---------- */
 
@@ -292,8 +403,10 @@ function applyLang() {
   $('q').setAttribute('aria-label', t('search'))
   document.querySelector('.sort').setAttribute('aria-label', t('sortLabel'))
   $('d-close').setAttribute('aria-label', t('close'))
-  if (pets.length > 0) drawList()
+  $('t-close').setAttribute('aria-label', t('close'))
+  if (pets.length > 0 || themes.length > 0) drawList()
   if (current !== null) fillDetail()
+  if (currentTheme !== null) fillThemeDetail()
 }
 
 $('lang').addEventListener('change', e => {
@@ -320,10 +433,10 @@ let likesAskedAt = 0
  * 한도를 넘었거나 응답이 없으면 그대로 둔다. Issue 100개씩, 필요한 것을 다 찾을 때까지 5페이지까지
  */
 async function refreshLikes() {
-  if (pets.length === 0 || Date.now() - likesAskedAt < LIKES_EVERY_MS) return
+  if (pets.length + themes.length === 0 || Date.now() - likesAskedAt < LIKES_EVERY_MS) return
   likesAskedAt = Date.now()
   const likes = {}
-  const missing = () => pets.some(pet => likes[pet.issue] === undefined)
+  const missing = () => [...pets, ...themes].some(item => likes[item.issue] === undefined)
   for (let page = 1; page <= 5 && missing(); page++) {
     const response = await fetch(`${ISSUES_API}?state=all&per_page=100&page=${page}`, {
       headers: { Accept: 'application/vnd.github+json' },
@@ -337,10 +450,15 @@ async function refreshLikes() {
   }
   if (Object.keys(likes).length === 0) return
   pets = applyLikes(pets, likes)
+  themes = applyLikes(themes, likes)
   drawList()
   if (current !== null) {
     current = pets.find(pet => pet.id === current.id) ?? current
     $('d-like-n').textContent = t('like')(current.likes)
+  }
+  if (currentTheme !== null) {
+    currentTheme = themes.find(theme => theme.id === currentTheme.id) ?? currentTheme
+    $('t-like-n').textContent = t('like')(currentTheme.likes)
   }
 }
 // GitHub에서 👍를 누르고 돌아오면 다시 묻는다: 탭이 다시 보일 때, 다른 창에서 이 창으로 돌아올 때
@@ -356,11 +474,16 @@ fetch('index.json', { cache: 'no-cache' })
   .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
   .then(index => {
     pets = Array.isArray(index.pets) ? index.pets : []
+    themes = Array.isArray(index.themes) ? index.themes : []
     drawHero()
-    drawList()
+    const wantedTheme = themes.find(theme => theme.id === themeFromQuery(location.search))
+    // 테마 주소로 들어오면 테마 탭을 연다
+    if (wantedTheme !== undefined || new URLSearchParams(location.search).get('tab') === 'themes') selectTab('themes')
+    else drawList()
     const wanted = petFromQuery(location.search)
     const pet = pets.find(p => p.id === wanted)
     if (pet !== undefined) openPet(pet)
+    else if (wantedTheme !== undefined) openTheme(wantedTheme)
     refreshLikes()
   })
   .catch(() => {

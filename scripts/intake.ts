@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import type { RejectCode } from './bundle.ts'
-import type { Decision, Registry } from './decide.ts'
+import type { Decision, Registry, Target } from './decide.ts'
 import { decide, parseTitle, SHARES_PER_DAY } from './decide.ts'
 
 export const SITE = 'https://ms1011.github.io/dotchi-packs'
@@ -46,14 +46,40 @@ const REJECTS: Record<RejectCode, (id: string, detail: string) => string> = {
   notFound: id => `There's no shared pet called \`${id}\` on the site.`,
 }
 
+/** 테마 요청에 남길 거절 댓글: 펫과 말이 다른 것만 */
+const THEME_REJECTS: Partial<Record<RejectCode, (id: string, detail: string) => string>> = {
+  noBundle: () =>
+    "Couldn't find a theme in this issue. Share from Claude Code with `/dotchi theme share <theme>` instead of opening an issue by hand.",
+  badBundle: () => 'The theme in this issue is damaged. Run `/dotchi theme share <theme>` again.',
+  tooBig: () => 'This theme is too big to share.',
+  badPack: id =>
+    `The theme.json in this issue breaks a theme rule. Fix it with \`/dotchi theme edit ${id}\` (or check it with tools/theme.py), then share again.`,
+  idMismatch: (id, detail) =>
+    `The title says \`${id}\` but the theme inside is \`${detail}\`. Run \`/dotchi theme share\` again instead of editing the issue.`,
+  rateLimited: () => `You've shared ${SHARES_PER_DAY} pets and themes in the last 24 hours. Try again tomorrow.`,
+  taken: id => `The theme \`${id}\` already belongs to someone else on the dotchi site. Try \`/dotchi theme share ${id} --as ${id}-2\`.`,
+  notOwner: id => `Only the person who shared the theme \`${id}\` can take it down.`,
+  notFound: id => `There's no shared theme called \`${id}\` on the site.`,
+}
+
 /** Issue에 남길 댓글 (영어) */
-export const reply = (d: Decision, id: string): string => {
+export const reply = (d: Decision, id: string, target: Target = 'pet'): string => {
+  if (target === 'theme') return themeReply(d, id)
   if (!d.ok) return REJECTS[d.reject](id, d.detail ?? '')
   const page = `${SITE}/?pet=${id}`
   if (d.kind === 'withdrawn') return `Took down \`${id}\`. You can share it again with \`/dotchi share ${id}\`.`
   const likes = d.kind === 'updated' && d.homeIssue !== null ? ` Likes are counted on #${d.homeIssue}.` : ' 👍 this issue to like it.'
   const verb = d.kind === 'created' ? 'is on' : 'was updated on'
   return `\`${id}\` ${verb} the dotchi site: ${page}\n\nInstall it with \`/dotchi install ${id}\`.${likes}\nThe page shows up within a minute or two.`
+}
+
+const themeReply = (d: Decision, id: string): string => {
+  if (!d.ok) return (THEME_REJECTS[d.reject] ?? REJECTS[d.reject])(id, d.detail ?? '')
+  if (d.kind === 'withdrawn') return `Took down the theme \`${id}\`. You can share it again with \`/dotchi theme share ${id}\`.`
+  const page = `${SITE}/?theme=${id}`
+  const likes = d.kind === 'updated' && d.homeIssue !== null ? ` Likes are counted on #${d.homeIssue}.` : ' 👍 this issue to like it.'
+  const verb = d.kind === 'created' ? 'is on' : 'was updated on'
+  return `The theme \`${id}\` ${verb} the dotchi site: ${page}\n\nInstall it with \`/dotchi theme install ${id}\`.${likes}\nThe page shows up within a minute or two.`
 }
 
 const blockedIds = (text: string | null): Set<number> =>
@@ -77,6 +103,7 @@ export const runIntake = async (event: IssueEvent, io: IntakeIO, now: Date): Pro
     title.kind === 'share' ? await io.countShares(issue.user.login, issue.number, new Date(now.getTime() - 24 * 3600 * 1000)) : 0
   const request = {
     kind: title.kind,
+    target: title.target,
     id: title.id,
     issue: issue.number,
     userId: issue.user.id,
@@ -87,15 +114,17 @@ export const runIntake = async (event: IssueEvent, io: IntakeIO, now: Date): Pro
   const decision = decide(request, registry, blocked, shares)
   let committed = false
   if (decision.ok) {
-    const dir = `packs/${title.id}`
+    const isTheme = title.target === 'theme'
+    const dir = `${isTheme ? 'themes' : 'packs'}/${title.id}`
     await io.removeDir(dir)
     if (decision.pack !== undefined) {
       for (const [name, text] of Object.entries(decision.pack.files)) await io.writeText(`${dir}/${name}`, text)
     }
+    if (decision.theme !== undefined) await io.writeText(`${dir}/theme.json`, decision.theme.text)
     await io.writeText('registry.json', `${JSON.stringify(decision.registry, null, 2)}\n`)
-    committed = await io.commit(`${title.kind}: ${title.id} (#${issue.number})`)
+    committed = await io.commit(`${isTheme ? 'theme-' : ''}${title.kind}: ${title.id} (#${issue.number})`)
   }
-  await io.comment(issue.number, reply(decision, title.id))
+  await io.comment(issue.number, reply(decision, title.id, title.target))
   await io.close(issue.number, decision.ok ? 'completed' : 'not_planned')
   return committed
 }
@@ -151,7 +180,8 @@ export const realIO = (repo: string, cwd = '.'): IntakeIO => {
         .split('\n')
         .filter(Boolean)
         .map(line => line.split('\t'))
-        .filter(([number, title, created]) => Number(number) !== issue && title!.startsWith('share:') && new Date(created!) >= since).length
+        // 펫과 테마 올리기를 함께 센다
+        .filter(([number, title, created]) => Number(number) !== issue && /^(theme-)?share:/.test(title!) && new Date(created!) >= since).length
     },
     comment: async (issue, body) => {
       gh(['issue', 'comment', String(issue), '--repo', repo, '--body-file', '-'], body)
@@ -161,10 +191,12 @@ export const realIO = (repo: string, cwd = '.'): IntakeIO => {
     },
     commit: async message => {
       git(['add', '-A', '--', 'registry.json'])
-      // packs/가 아직 없거나(첫 게시 전) 통째로 지워졌을 수 있다: 맞는 파일이 없으면 git이 실패하므로 따로
-      try {
-        git(['add', '-A', '--', 'packs'])
-      } catch {}
+      // packs/·themes/가 아직 없거나(첫 게시 전) 통째로 지워졌을 수 있다: 맞는 파일이 없으면 git이 실패하므로 따로
+      for (const dir of ['packs', 'themes']) {
+        try {
+          git(['add', '-A', '--', dir])
+        } catch {}
+      }
       if (git(['diff', '--cached', '--name-only']).trim() === '') return false
       git(['commit', '-q', '-m', message])
       git(['pull', '-q', '--rebase'])
@@ -177,10 +209,10 @@ export const realIO = (repo: string, cwd = '.'): IntakeIO => {
   }
 }
 
-/** 열린 share:/unshare: Issue 목록 (PR 제외) */
+/** 열린 share:/unshare:/theme-share:/theme-unshare: Issue 목록 (PR 제외) */
 const openRequests = (repo: string): IssueEvent['issue'][] => {
   const jq =
-    '.[] | select(.pull_request == null) | select(.title | test("^(un)?share:")) | {number, title, body, user: {id: .user.id, login: .user.login}} | @json'
+    '.[] | select(.pull_request == null) | select(.title | test("^(theme-)?(un)?share:")) | {number, title, body, user: {id: .user.id, login: .user.login}} | @json'
   const out = execFileSync('gh', ['api', '-X', 'GET', `repos/${repo}/issues`, '-f', 'state=open', '-f', 'per_page=100', '--paginate', '--jq', jq], {
     encoding: 'utf8',
   })

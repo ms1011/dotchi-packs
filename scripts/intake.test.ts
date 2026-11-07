@@ -190,3 +190,37 @@ test('워크플로: 접수는 쓸고 지나가는 방식(예약·수동 실행, 
   const site = readFileSync(new URL('../.github/workflows/site.yml', import.meta.url), 'utf8')
   assert.match(site, /cancel-in-progress: false/)
 })
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const themeShare = (id: string) => {
+  const text = JSON.stringify({ format: 1, id, name: 'Ocean', faces: { ok: '(^o^)' } })
+  return `\`\`\`dotchi-theme\n${Buffer.from(text, 'utf8').toString('base64')}\n\`\`\``
+}
+
+test('theme-share 통과: themes/<id>/theme.json, registry.themes, theme-share 커밋, 설치 안내 댓글', async () => {
+  const { io, files, calls, comments } = fakeIO({ 'registry.json': '{"pets":{}}\n' })
+  await runIntake(event('theme-share: ocean', themeShare('ocean')), io, NOW)
+  assert.equal(JSON.parse(files['themes/ocean/theme.json']!).faces.ok, '(^o^)')
+  assert.equal(JSON.parse(files['registry.json']!).themes.ocean.state, 'published')
+  assert.deepEqual(calls.slice(-3), ['commit theme-share: ocean (#5)', 'comment', 'close completed'])
+  assert.match(comments[0]!, /\/dotchi theme install ocean/)
+  assert.match(comments[0]!, /\?theme=ocean/)
+})
+
+test('theme-share 거절: 테마에 맞는 말로, 아무것도 쓰지 않는다', async () => {
+  const { io, files, calls, comments } = fakeIO({ 'registry.json': '{"pets":{}}\n' })
+  await runIntake(event('theme-share: ocean', 'nothing here'), io, NOW)
+  assert.equal(files['themes/ocean/theme.json'], undefined)
+  assert.deepEqual(calls, ['comment', 'close not_planned'])
+  assert.match(comments[0]!, /\/dotchi theme share/)
+})
+
+test('theme-unshare: 내리면 themes/<id>/를 지운다', async () => {
+  const registry = { pets: {}, themes: { ocean: { ownerId: 777, ownerLogin: 'me', issue: 3, created: 'd', updated: 'd', artHash: null, state: 'published' } } }
+  const { io, files, comments } = fakeIO({ 'registry.json': JSON.stringify(registry), 'themes/ocean/theme.json': '{}' })
+  await runIntake(event('theme-unshare: ocean', ''), io, NOW)
+  assert.equal(files['themes/ocean/theme.json'], undefined)
+  assert.equal(JSON.parse(files['registry.json']!).themes.ocean.state, 'withdrawn')
+  assert.match(comments[0]!, /Took down the theme `ocean`/)
+})

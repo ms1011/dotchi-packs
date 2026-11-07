@@ -23,6 +23,7 @@ const ME = 777
 const OTHER = 888
 const req = (over: Partial<Request> = {}): Request => ({
   kind: 'share',
+  target: 'pet',
   id: 'my-cat',
   issue: 5,
   userId: ME,
@@ -43,8 +44,11 @@ const entry = (ownerId: number, state: 'published' | 'withdrawn' | 'removed' | '
 })
 
 test('parseTitle', () => {
-  assert.deepEqual(parseTitle('share: my-cat'), { kind: 'share', id: 'my-cat' })
-  assert.deepEqual(parseTitle('unshare:my-cat '), { kind: 'unshare', id: 'my-cat' })
+  assert.deepEqual(parseTitle('share: my-cat'), { kind: 'share', id: 'my-cat', target: 'pet' })
+  assert.deepEqual(parseTitle('unshare:my-cat '), { kind: 'unshare', id: 'my-cat', target: 'pet' })
+  assert.deepEqual(parseTitle('theme-share: ocean'), { kind: 'share', id: 'ocean', target: 'theme' })
+  assert.deepEqual(parseTitle('theme-unshare: ocean'), { kind: 'unshare', id: 'ocean', target: 'theme' })
+  assert.equal(parseTitle('theme share: ocean'), null)
   assert.equal(parseTitle('share my-cat'), null)
   assert.equal(parseTitle('Share: x'), null)
   assert.equal(parseTitle('share: My Cat'), null)
@@ -159,4 +163,62 @@ test('registry.json의 기본 펫 지문은 플러그인 기본 펫 그림과 �
     const art = JSON.parse(readFileSync(new URL(`../dotchi/characters/${id}/art.json`, import.meta.url), 'utf8'))
     assert.equal(registry.pets[id]!.artHash, artHash(art), id)
   }
+})
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const themeText = (id: string, over: Record<string, unknown> = {}) =>
+  JSON.stringify({ format: 1, id, name: { ko: '바다', en: 'Ocean' }, colors: { ok: '#00aaff' }, ...over })
+const themeBody = (text: string) => `<!-- dotchi-theme-share v1 -->\n\n\`\`\`dotchi-theme\n${Buffer.from(text, 'utf8').toString('base64')}\n\`\`\``
+const themeReq = (over: Partial<Request> = {}): Request =>
+  req({ target: 'theme', id: 'ocean', body: themeBody(themeText(over.id ?? 'ocean')), ...over })
+
+test('테마 share: themes에 created, 테마 글을 돌려준다. 펫과 id를 따로 쓴다', () => {
+  const registry: Registry = { pets: { ocean: entry(OTHER, 'published') } }
+  const d = decide(themeReq(), registry, new Set(), 0)
+  assert.equal(d.ok, true)
+  if (!d.ok) return
+  assert.equal(d.kind, 'created')
+  assert.equal(d.pack, undefined)
+  assert.equal(d.theme?.meta.id, 'ocean')
+  assert.equal(d.theme?.look.colors.ok, '#00aaff')
+  assert.equal(d.theme?.text, themeText('ocean'))
+  assert.deepEqual(d.registry.themes?.ocean, {
+    ownerId: ME, ownerLogin: 'me', issue: 5, created: '2026-10-24', updated: '2026-10-24', artHash: null, state: 'published',
+  })
+  assert.deepEqual(d.registry.pets, registry.pets)
+})
+
+test('테마 share: 내 테마는 updated, 남의 테마 id는 taken', () => {
+  const mine: Registry = { pets: {}, themes: { ocean: entry(ME, 'published', 3) } }
+  const updated = decide(themeReq({ issue: 9 }), mine, new Set(), 0)
+  assert.equal(updated.ok && updated.kind, 'updated')
+  assert.equal(updated.ok && updated.homeIssue, 3)
+  const theirs: Registry = { pets: {}, themes: { ocean: entry(OTHER, 'published') } }
+  assert.deepEqual(decide(themeReq(), theirs, new Set(), 0), { ok: false, reject: 'taken' })
+})
+
+test('테마 share: 블록 없음·깨진 테마·제목과 다른 id·너무 큼', () => {
+  assert.deepEqual(decide(themeReq({ body: 'no theme' }), empty(), new Set(), 0), { ok: false, reject: 'noBundle' })
+  assert.deepEqual(decide(themeReq({ body: themeBody(themeText('ocean', { colors: { ok: 'blue' } })) }), empty(), new Set(), 0), {
+    ok: false, reject: 'badPack', detail: 'theme.json',
+  })
+  assert.deepEqual(decide(themeReq({ body: themeBody(themeText('sea')) }), empty(), new Set(), 0), {
+    ok: false, reject: 'idMismatch', detail: 'sea',
+  })
+  const huge = `\`\`\`dotchi-theme\n${'A'.repeat(9000)}\n\`\`\``
+  assert.deepEqual(decide(themeReq({ body: huge }), empty(), new Set(), 0), { ok: false, reject: 'tooBig' })
+  assert.deepEqual(decide(themeReq(), empty(), new Set([ME]), 0), { ok: false, reject: 'blocked' })
+  assert.deepEqual(decide(themeReq(), empty(), new Set(), 20), { ok: false, reject: 'rateLimited' })
+})
+
+test('테마 unshare: 주인만 내리고, 펫 목록은 건드리지 않는다', () => {
+  const registry: Registry = { pets: { ocean: entry(ME, 'published') }, themes: { ocean: entry(ME, 'published', 3) } }
+  const d = decide(themeReq({ kind: 'unshare', body: '' }), registry, new Set(), 0)
+  assert.equal(d.ok && d.kind, 'withdrawn')
+  assert.equal(d.ok && d.registry.themes?.ocean?.state, 'withdrawn')
+  assert.equal(d.ok && d.registry.pets.ocean?.state, 'published')
+  const other: Registry = { pets: {}, themes: { ocean: entry(OTHER, 'published') } }
+  assert.deepEqual(decide(themeReq({ kind: 'unshare', body: '' }), other, new Set(), 0), { ok: false, reject: 'notOwner' })
+  assert.deepEqual(decide(themeReq({ kind: 'unshare', body: '' }), empty(), new Set(), 0), { ok: false, reject: 'notFound' })
 })

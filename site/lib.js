@@ -57,3 +57,76 @@ export const likesFromIssues = items => {
 
 /** 최신 👍 수로 바꾼 새 목록. 모르는 Issue는 빌드 때 숫자 그대로 */
 export const applyLikes = (pets, likes) => pets.map(pet => (likes[pet.issue] === undefined ? pet : { ...pet, likes: likes[pet.issue] }))
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const COLOR = /^#[0-9a-f]{6}$/i
+/** 'pet'(펫 색)이거나 이상한 값이면 대신 쓰는 강조색: 라벤더 */
+const FALLBACK_ACCENT = '#b8a6ff'
+/** 플러그인의 기본 모양과 같다: 빠진 칸은 이것으로 */
+export const DEFAULT_LOOK = {
+  colors: { ok: '#8fd9b6', warn: '#ffd86b', danger: '#ff8fa3', dim: '#9a9ab0', accent: 'pet' },
+  faces: { ok: '(•ᴗ•)', warn: '(•_•;)', danger: '(×_×)' },
+  hearts: ['♥', '♡'],
+  bar: ['▰', '▱'],
+  symbols: { week: '⚡', tired: '🥱', reset: '↻', time: '⏱' },
+}
+
+/** 주소의 ?theme=<id> (id 모양일 때만) */
+export const themeFromQuery = search => {
+  const id = new URLSearchParams(search).get('theme')
+  return id !== null && ID.test(id) ? id : null
+}
+
+export const themeInstallCommand = id => `/dotchi theme install ${id}`
+
+/** 미리 보기의 세 장면: 괜찮을 때, 배부를 때, 꽉 찼을 때 (컨텍스트 %, 주간 %) */
+export const MOODS = [
+  { level: 'ok', context: 40, week: 41 },
+  { level: 'warn', context: 78, week: 83 },
+  { level: 'danger', context: 93, week: 97 },
+]
+
+const fill = (pair, percent, cells) => {
+  const k = Math.min(cells, Math.max(0, Math.round((percent / 100) * cells)))
+  return pair[0].repeat(k) + pair[1].repeat(cells - k)
+}
+
+/**
+ * 한 장면의 미리 보기: 상태 줄(글자만, 터미널처럼 색 없이)과 옆 패널 카드 세 줄([{ text, color }] 조각).
+ * 색은 #rrggbb만 쓴다 (페이지 스타일에 그대로 넣으므로). labels: { full, week }
+ */
+export const previewOf = (look, mood, labels) => {
+  const pick2 = (key, fallback) => (Array.isArray(look?.[key]) && look[key].length === 2 ? look[key] : fallback)
+  const colors = { ...DEFAULT_LOOK.colors, ...look?.colors }
+  const faces = { ...DEFAULT_LOOK.faces, ...look?.faces }
+  const symbols = { ...DEFAULT_LOOK.symbols, ...look?.symbols }
+  const hearts = pick2('hearts', DEFAULT_LOOK.hearts)
+  const bar = pick2('bar', DEFAULT_LOOK.bar)
+  const paint = key => {
+    const value = colors[key]
+    if (key === 'accent') return COLOR.test(value) ? value : FALLBACK_ACCENT
+    return COLOR.test(value) ? value : DEFAULT_LOOK.colors[key]
+  }
+  const { level, context, week } = mood
+  const weekLevel = week >= 95 ? 'danger' : week >= 80 ? 'warn' : 'ok'
+  const face = level === 'ok' ? '' : ` ${faces[level]}${level === 'danger' ? ' /compact' : ''}`
+  const tired = weekLevel === 'danger' ? ` ${symbols.tired}` : ''
+  const status = `🐾 ${fill(hearts, context, 5)} ${context}%${face} · ${symbols.week} ${week}%${tired} · ⎇ main`
+  const rows = [
+    [
+      { text: faces[level], color: level === 'ok' ? paint('accent') : paint(level) },
+      { text: ` ${labels.full} `, color: paint('dim') },
+      { text: `${fill(bar, context, 10)} ${context}%`, color: paint(level) },
+      { text: level === 'danger' ? ' /compact' : '', color: paint('dim') },
+    ],
+    [
+      { text: symbols.week, color: paint(weekLevel) },
+      { text: ` ${labels.week} `, color: paint('dim') },
+      { text: `${fill(bar, week, 10)} ${week}%`, color: paint(weekLevel) },
+      { text: weekLevel === 'danger' ? ` ${symbols.tired}` : ` ${symbols.reset} 09:00`, color: paint('dim') },
+    ],
+    [{ text: `${symbols.time} 12m · Opus 5.5 · 1M`, color: paint('dim') }],
+  ]
+  return { status, rows: rows.map(row => row.filter(part => part.text !== '')) }
+}

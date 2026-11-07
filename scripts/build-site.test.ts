@@ -93,3 +93,38 @@ test('좋아요 가져오기 실패 → likes 0으로 계속', async () => {
   await buildSite(out, { fetchLikes: async () => { throw new Error('rate limited') }, zip: async () => {} }, root)
   assert.equal(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).pets[0].likes, 0)
 })
+
+/* ---------- 상태 줄 테마 ---------- */
+
+const oceanText = JSON.stringify({ format: 1, id: 'ocean', name: { en: 'Ocean' }, description: 'blue', colors: { ok: '#00aaff' } })
+
+test('buildIndex: 게시 중이고 읽을 수 있는 테마만, 모양과 좋아요를 싣는다. takenThemes는 전부', () => {
+  const withThemes: Registry = { ...registry, themes: { ocean: entry(7, 'published'), old: entry(8, 'withdrawn'), broken: entry(9, 'published') } }
+  const readTheme = (id: string) => {
+    if (id !== 'ocean') return null
+    const parsed = JSON.parse(oceanText)
+    return { meta: { format: 1 as const, id, name: parsed.name, description: 'blue' }, look: { colors: { ok: '#00aaff' } } as never }
+  }
+  const index = buildIndex(withThemes, readPack, { 7: 4 }, readTheme)
+  assert.deepEqual(index.takenThemes, { ocean: 777, old: 777, broken: 777 })
+  assert.deepEqual(index.themes, [
+    { id: 'ocean', name: { en: 'Ocean' }, description: 'blue', owner: 'u777', created: '2026-10-21', updated: '2026-10-21', likes: 4, issue: 7, look: { colors: { ok: '#00aaff' } } },
+  ])
+  assert.equal(index.pets.length, 1)
+})
+
+test('buildSite: 테마 theme.json을 사이트에 복사하고 index에 모양을 채운다', async () => {
+  const root = repo()
+  mkdirSync(join(root, 'themes/ocean'), { recursive: true })
+  writeFileSync(join(root, 'themes/ocean/theme.json'), oceanText)
+  const reg = JSON.parse(readFileSync(join(root, 'registry.json'), 'utf8'))
+  writeFileSync(join(root, 'registry.json'), JSON.stringify({ ...reg, themes: { ocean: entry(7, 'published') } }))
+  const out = join(root, '_site')
+  await buildSite(out, { fetchLikes: async issues => Object.fromEntries(issues.map(n => [n, n])), zip: async () => {} }, root)
+  assert.equal(readFileSync(join(out, 'themes/ocean/theme.json'), 'utf8'), oceanText)
+  const index = JSON.parse(readFileSync(join(out, 'index.json'), 'utf8'))
+  assert.equal(index.themes[0].likes, 7)
+  assert.equal(index.themes[0].look.colors.ok, '#00aaff')
+  assert.equal(index.themes[0].look.colors.warn, '#ffd86b')
+  assert.equal(index.themes[0].look.faces.ok, '(•ᴗ•)')
+})

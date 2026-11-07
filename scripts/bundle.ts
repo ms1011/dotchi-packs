@@ -3,7 +3,8 @@ import { gunzipSync } from 'node:zlib'
 
 import { parseArt } from '../dotchi/hooks/dots.ts'
 import { LANGS, parseLines, parseMeta } from '../dotchi/hooks/packs.ts'
-import type { Art, PackLines, PackMeta } from '../dotchi/types/index.d.ts'
+import { parseTheme } from '../dotchi/hooks/theme.ts'
+import type { Art, Look, PackLines, PackMeta, ThemeMeta } from '../dotchi/types/index.d.ts'
 
 /** 플러그인 hooks/share.ts의 BUNDLE_FILE과 같아야 한다 (테스트가 확인) */
 export const BUNDLE_FILE = /^(dotchi\.json|art\.json|lines\.json|grid\/[a-z0-9_-]{1,16}\.txt)$/
@@ -102,3 +103,36 @@ export const checkPack = (files: Record<string, string>, titleId: string): Pack 
 
 /** 그림만 보고 만든 지문: 남의 펫을 그대로 다시 올리는 것을 알아본다 */
 export const artHash = (art: Art): string => createHash('sha256').update(JSON.stringify([art.idle, art.work])).digest('hex')
+
+/* ---------- 상태 줄 테마: theme.json 하나를 UTF-8 base64로 (gzip 없이) ---------- */
+
+const MAX_THEME_BASE64 = 8000
+
+export type ThemePack = { meta: ThemeMeta; look: Look; text: string }
+
+/** Issue 본문에서 ```dotchi-theme 블록 하나의 base64 */
+export const extractTheme = (body: string): string | Reject => {
+  const blocks = [...body.matchAll(/```dotchi-theme\r?\n([\s\S]*?)\r?\n```/g)]
+  if (blocks.length === 0) return { reject: 'noBundle' }
+  if (blocks.length > 1) return { reject: 'badBundle' }
+  return blocks[0]![1]!.trim()
+}
+
+/** base64 → theme.json 글. 크기 상한, base64 모양, UTF-8 */
+export const decodeTheme = (base64: string): string | Reject => {
+  if (base64.length > MAX_THEME_BASE64) return { reject: 'tooBig' }
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(base64)) return { reject: 'badBundle' }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.from(base64, 'base64'))
+  } catch {
+    return { reject: 'badBundle' }
+  }
+}
+
+/** 플러그인과 같은 규칙(hooks/theme.ts)으로 검사하고, 제목의 id와 맞는지. 글자 제한도 그 규칙에 들어 있다 */
+export const checkTheme = (text: string, titleId: string): ThemePack | Reject => {
+  const parsed = parseTheme(text)
+  if (parsed === null) return { reject: 'badPack', detail: 'theme.json' }
+  if (parsed.meta.id !== titleId) return { reject: 'idMismatch', detail: parsed.meta.id }
+  return { ...parsed, text }
+}
