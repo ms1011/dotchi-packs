@@ -158,6 +158,7 @@ const showNotice = key => {
 function drawList() {
   stops.splice(0).forEach(stop => stop())
   const isThemes = tab === 'themes'
+  grid.classList.toggle('themes', isThemes)
   const list = sortPets(filterPets(isThemes ? themes : pets, $('q').value), sort)
   $('count').textContent = t(isThemes ? 'themeCount' : 'count')(list.length)
   if (list.length === 0) return showNotice(isThemes ? 'themeEmpty' : 'empty')
@@ -175,26 +176,49 @@ const span = (text, color, className) => {
 }
 
 /** 한 장면(상태 줄 + 패널 카드)을 .term 안에 그린다. 테마에서 온 글자는 textContent로만 */
-function drawMood(box, look, mood, withLabels) {
+/** 한 장면: 상태 줄 한 줄과 옆 패널 카드 (rows줄, 카드는 막대 두 줄·상세는 세 줄 모두) */
+function drawMood(box, look, mood, rows = 3) {
+  box.replaceChildren()
   const preview = previewOf(look, mood, { full: t('gaugeFull'), week: t('gaugeWeek') })
-  if (withLabels) {
-    const label = { ok: 'moodOk', warn: 'moodWarn', danger: 'moodDanger' }[mood.level]
-    box.append(span(`${t(label)} · ${t('statusLine')}`, undefined, 'label'))
-  }
   box.append(span(preview.status, undefined, 'line status'))
-  if (withLabels) box.append(span(t('panel'), undefined, 'label'))
-  for (const row of preview.rows) {
+  const panel = span('', undefined, 'panel')
+  for (const row of preview.rows.slice(0, rows)) {
     const line = span('', undefined, 'line')
     line.append(...row.map(part => span(part.text, part.color)))
-    box.append(line)
+    panel.append(line)
   }
+  box.append(panel)
+}
+/** 괜찮을 때 → 배부를 때 → 꽉 찼을 때를 되풀이한다. 멈추는 함수를 돌려준다 */
+const cycleMoods = (box, look, rows) => {
+  let i = 0
+  drawMood(box, look, MOODS[0], rows)
+  const timer = setInterval(() => drawMood(box, look, MOODS[++i % MOODS.length], rows), 1100)
+  return () => clearInterval(timer)
 }
 
 function themeCard(theme) {
   const el = document.createElement('button')
   el.className = 'card tcard'
   el.innerHTML = '<div class="term"></div><h3><span class="title"></span></h3><div class="meta"><span class="who"></span><span class="likes"></span></div>'
-  drawMood(el.querySelector('.term'), theme.look, MOODS[1], false)
+  // 평소엔 괜찮을 때, 올리면 배부를 때·꽉 찼을 때까지 차례로
+  const term = el.querySelector('.term')
+  drawMood(term, theme.look, MOODS[0], 2)
+  let stop = null
+  const start = () => {
+    if (stop !== null) return
+    stop = cycleMoods(term, theme.look, 2)
+    stops.push(stop)
+  }
+  const end = () => {
+    stop?.()
+    stop = null
+    drawMood(term, theme.look, MOODS[0], 2)
+  }
+  el.addEventListener('mouseenter', start)
+  el.addEventListener('mouseleave', end)
+  el.addEventListener('focus', start)
+  el.addEventListener('blur', end)
   el.querySelector('.title').textContent = pick(theme.name, lang)
   if (theme.created === localToday()) {
     const badge = document.createElement('span')
@@ -226,8 +250,22 @@ function fillThemeDetail() {
   $('t-by').textContent = t('by')(theme.owner, fmtDate(theme.created))
   $('t-desc').textContent = theme.description || t('noDesc')
   const box = $('t-preview')
-  box.replaceChildren()
-  for (const mood of MOODS) drawMood(box, theme.look, mood, true)
+  const chips = $('t-moods')
+  const select = index => {
+    drawMood(box, theme.look, MOODS[index])
+    for (const chip of chips.children) chip.setAttribute('aria-pressed', String(Number(chip.dataset.mood) === index))
+  }
+  chips.replaceChildren(
+    ...MOODS.map((mood, i) => {
+      const chip = document.createElement('button')
+      chip.type = 'button'
+      chip.dataset.mood = String(i)
+      chip.textContent = t({ ok: 'moodOk', warn: 'moodWarn', danger: 'moodDanger' }[mood.level])
+      chip.addEventListener('click', () => select(i))
+      return chip
+    }),
+  )
+  select(0)
   $('t-cmd').textContent = themeInstallCommand(theme.id)
   $('t-like-n').textContent = t('like')(theme.likes)
   $('t-like').href = `${REPO}/issues/${theme.issue}`

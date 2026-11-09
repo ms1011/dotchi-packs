@@ -140,8 +140,11 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 75%; h
 .term .status { color: #c8c8d0; }
 .term .label { color: #6f6d7a; font-size: 11px; margin-top: 6px; }
 .term .label:first-child { margin-top: 0; }
-.tcard .term { min-height: 92px; font-size: 11px; padding: 9px 10px; }
-.term.big { font-size: 13px; padding: 14px 16px; }
+.tcard .term { font-size: 12.5px; padding: 14px; }
+.tcard .term .line { overflow: visible; }
+.grid.themes { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.term .panel { display: grid; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #34323d; }
+.term.big { font-size: 14px; padding: 18px 20px; }
 .tdetail .info { padding: 24px; }
 .empty { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 48px 0; }
 
@@ -348,6 +351,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
       </div>
       <p class="desc" id="t-desc"></p>
       <div class="term big" id="t-preview"></div>
+      <div class="chips" id="t-moods" role="group"></div>
       
       <div class="install"><code id="t-cmd"></code><button class="copy" id="t-copy"></button></div>
       

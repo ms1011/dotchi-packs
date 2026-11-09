@@ -112,7 +112,10 @@ export const previewOf = (look, mood, labels) => {
   const weekLevel = week >= 95 ? 'danger' : week >= 80 ? 'warn' : 'ok'
   const face = level === 'ok' ? '' : ` ${faces[level]}${level === 'danger' ? ' /compact' : ''}`
   const tired = weekLevel === 'danger' ? ` ${symbols.tired}` : ''
-  const status = `🐾 ${fill(hearts, context, 5)} ${context}%${face} · ${symbols.week} ${week}%${tired} · ⎇ main`
+  // 플러그인처럼 아이콘 뒤에 진화 단계 별 (주간 33%부터 2단계, 66%부터 3단계)
+  const stage = week >= 66 ? 3 : week >= 33 ? 2 : 1
+  const stars = '★'.repeat(stage) + '☆'.repeat(3 - stage)
+  const status = `🐾 ${stars} · ${fill(hearts, context, 5)} ${context}%${face} · ${symbols.week} ${week}%${tired} · ⎇ main`
   const rows = [
     [
       { text: faces[level], color: level === 'ok' ? paint('accent') : paint(level) },
