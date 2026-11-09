@@ -80,7 +80,7 @@ export const themeFromQuery = search => {
 
 export const themeInstallCommand = id => `/dotchi theme install ${id}`
 
-/** 미리 보기의 세 장면: 괜찮을 때, 배부를 때, 꽉 찼을 때 (컨텍스트 %, 주간 %) */
+/** 미리 보기의 세 장면: 여유, 주의, 위험 (컨텍스트 %, 주간 %) */
 export const MOODS = [
   { level: 'ok', context: 40, week: 41 },
   { level: 'warn', context: 78, week: 83 },

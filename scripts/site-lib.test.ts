@@ -113,7 +113,7 @@ test('좋아요는 창에 포커스가 돌아올 때와 펫을 열 때도 다시
 
 /* ---------- 상태 줄 테마 ---------- */
 
-const LABELS = { full: '배부름', week: '주간' }
+const LABELS = { full: '세션', week: '주간' }
 
 test('themeFromQuery·themeInstallCommand', () => {
   assert.equal(themeFromQuery('?theme=ocean'), 'ocean')
@@ -127,7 +127,7 @@ test('previewOf: 기본 모양이면 플러그인과 같은 상태 줄, 강조�
   assert.equal(ok.status, '🐾 ★★☆ · ♥♥♡♡♡ 40% · ⚡ 41% · ⎇ main')
   assert.deepEqual(ok.rows[0], [
     { text: '(•ᴗ•)', color: '#b8a6ff' },
-    { text: ' 배부름 ', color: '#9a9ab0' },
+    { text: ' 세션 ', color: '#9a9ab0' },
     { text: '▰▰▰▰▱▱▱▱▱▱ 40%', color: '#8fd9b6' },
   ])
   const danger = previewOf({}, MOODS[2], LABELS)
