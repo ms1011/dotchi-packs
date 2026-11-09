@@ -325,6 +325,8 @@ function drawHero() {
 
 const dlg = $('dlg')
 let detailStop = null
+/** 상세를 채울 때마다 하나씩: 늦게 온 그림이 새 화면을 덮지 않게 */
+let detailGeneration = 0
 let bubbleTimer = null
 
 /** 주소의 ?pet= / ?theme= 를 바꾼다 (공유할 수 있는 주소) */
@@ -371,27 +373,59 @@ function fillDetail() {
   clearInterval(bubbleTimer)
   const canvas = $('d-canvas')
   canvas.getContext('2d').clearRect(0, 0, 32, 32)
-  const strip = $('d-stages')
-  strip.replaceChildren()
-  strip.hidden = true
+  const chips = $('d-chips')
+  const grow = $('d-grow')
+  const growGrid = $('d-grow-grid')
+  chips.replaceChildren()
+  chips.hidden = true
+  growGrid.replaceChildren()
+  grow.hidden = true
+  // 그림이 오기 전에 다시 채워지면(언어 바꾸기) 늦게 온 쪽은 버린다
+  const generation = ++detailGeneration
   framesOf(pet.id)
     .then(f => {
-      if (current !== pet) return
-      const stops = [play(canvas, f, pet.frameMs)]
-      // 단계가 있으면 아래에 단계마다 작은 그림을 나란히, 모두 움직인다
+      if (current !== pet || generation !== detailGeneration) return
+      const stops = []
+      let showStop = null
+      // 큰 펫: 고른 단계의 움직임. 칩과 아래 타일이 같은 단계를 가리킨다
+      const select = index => {
+        showStop?.()
+        showStop = play(canvas, f.stages[index], pet.frameMs)
+        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === index))
+      }
       if (f.stages.length > 1) {
-        strip.hidden = false
+        chips.hidden = false
+        grow.hidden = false
         f.stages.forEach((stage, i) => {
-          const cell = document.createElement('figure')
+          const chip = document.createElement('button')
+          chip.type = 'button'
+          chip.dataset.stage = String(i)
+          chip.textContent = t('stage')(i + 1)
+          chip.addEventListener('click', () => select(i))
+          chips.append(chip)
+          const tile = document.createElement('button')
+          tile.type = 'button'
+          tile.className = 'grow-tile'
+          tile.dataset.stage = String(i)
           const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
-          const label = document.createElement('figcaption')
-          label.textContent = t('stage')(i + 1)
-          cell.append(small, label)
-          strip.append(cell)
+          const name = document.createElement('b')
+          name.textContent = t('stage')(i + 1)
+          const range = document.createElement('span')
+          range.textContent = t('stageRange')[i] ?? ''
+          const ground = document.createElement('div')
+          ground.className = 'ground'
+          ground.append(small)
+          tile.append(ground, name, range)
+          tile.addEventListener('click', () => select(i))
+          growGrid.append(tile)
           stops.push(play(small, stage, pet.frameMs))
         })
       }
-      detailStop = () => stops.forEach(stop => stop())
+      select(0)
+      detailStop = () => {
+        showStop?.()
+        stops.forEach(stop => stop())
+      }
     })
     .catch(() => {})
   const bubble = $('d-bubble')

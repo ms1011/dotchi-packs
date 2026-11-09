@@ -179,3 +179,20 @@ test('카드 함수는 자기 인자만 쓴다: 테마 카드가 펫을, 펫 카
   assert.doesNotMatch(body('themeCard'), /\bpet\b/)
   assert.match(body('card'), /stageBadge\(pet\)/)
 })
+
+test('성장 단계 칸의 글은 네 언어 모두에 있다', async () => {
+  const { STRINGS } = await import('../site/strings.js')
+  for (const lang of ['ko', 'en', 'ja', 'zh']) {
+    const s = STRINGS[lang]
+    assert.equal(typeof s.growTitle, 'string', lang)
+    assert.equal(typeof s.growHint, 'string', lang)
+    assert.equal(s.stageRange.length, 3, lang)
+    assert.equal(typeof s.stage(1), 'string', lang)
+  }
+})
+
+test('상세 화면에 큰 펫, 단계 칩, 성장 단계 칸이 있다', () => {
+  const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8')
+  for (const id of ['d-canvas', 'd-chips', 'd-grow', 'd-grow-grid']) assert.match(html, new RegExp(`id="${id}"`), id)
+  assert.doesNotMatch(html, /id="d-stages"/)
+})
