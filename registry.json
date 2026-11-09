@@ -82,6 +82,15 @@
       "updated": "2026-11-09",
       "artHash": null,
       "state": "published"
+    },
+    "mono": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": 21,
+      "created": "2026-11-09",
+      "updated": "2026-11-09",
+      "artHash": null,
+      "state": "published"
     }
   }
 }
