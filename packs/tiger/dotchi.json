@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "A brave little tiger from Korea that hunts bugs while Claude works.",
-  "frameMs": 220
+  "frameMs": 220,
+  "icon": "🐯"
 }
