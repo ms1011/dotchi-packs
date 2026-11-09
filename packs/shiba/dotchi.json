@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "A cheerful Shiba Inu from Japan that wags its tail while Claude works.",
-  "frameMs": 200
+  "frameMs": 200,
+  "icon": "🦴"
 }
