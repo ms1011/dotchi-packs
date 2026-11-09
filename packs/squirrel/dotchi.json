@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "A busy squirrel that hugs an acorn and gathers ideas while Claude works.",
-  "frameMs": 250
+  "frameMs": 250,
+  "icon": "🌰"
 }
