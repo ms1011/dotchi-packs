@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "Looks laid-back, but sprints like the wind whenever Claude is working.",
-  "frameMs": 110
+  "frameMs": 110,
+  "icon": "🍓"
 }
