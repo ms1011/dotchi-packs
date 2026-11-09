@@ -392,10 +392,8 @@ function fillDetail() {
   const chips = $('d-chips')
   const grow = $('d-grow')
   const growGrid = $('d-grow-grid')
-  const motion = $('d-motion')
-  const motionGrid = $('d-motion-grid')
-  for (const el of [chips, grow, motion]) el.hidden = true
-  for (const el of [chips, growGrid, motionGrid]) el.replaceChildren()
+  for (const el of [chips, grow]) el.hidden = true
+  for (const el of [chips, growGrid]) el.replaceChildren()
   // 그림이 오기 전에 다시 채워지면(언어 바꾸기) 늦게 온 쪽은 버린다
   const generation = ++detailGeneration
   framesOf(pet.id)
@@ -403,73 +401,33 @@ function fillDetail() {
       if (current !== pet || generation !== detailGeneration) return
       const stops = []
       let showStop = null
-      let motionStops = []
-      const view = { stage: 0, motion: 'work' }
-      // webp가 있으면 그 그림, 없으면(또는 컷 한 장) 캔버스에 그린다
-      const tile = (cls, frames, label, sub, webp) => {
+      let stage = 0
+      // webp가 있으면 그 그림, 없으면 캔버스에 움직임을 그린다
+      const tile = (frames, label, sub, webp) => {
         const el = document.createElement('button')
         el.type = 'button'
-        el.className = cls
+        el.className = 'grow-tile'
         const ground = document.createElement('div')
         ground.className = 'ground'
         const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
-        ground.append(webp && pet.media ? spriteImg(webpOf(pet, webp)) : small)
+        ground.append(pet.media ? spriteImg(webpOf(pet, webp)) : small)
         const name = document.createElement('b')
         name.textContent = label
-        el.append(ground, name)
-        if (sub) {
-          const span = document.createElement('span')
-          span.textContent = sub
-          el.append(span)
-        }
-        if (webp && pet.media) return { el, stop: null }
-        if (frames.work) return { el, stop: play(small, frames, pet.frameMs) }
-        paint(small, frames)
-        return { el, stop: null }
+        const span = document.createElement('span')
+        span.textContent = sub
+        el.append(ground, name, span)
+        return { el, stop: pet.media ? null : play(small, frames, pet.frameMs) }
       }
-      const mark = () => {
-        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === view.stage))
-        for (const el of motionGrid.querySelectorAll('[data-motion]')) el.setAttribute('aria-pressed', String(el.dataset.motion === view.motion))
-      }
-      // 큰 펫: 고른 단계, 고른 모션 (쉴 때는 멈춘 그림)
-      const show = () => {
+      // 큰 펫: 고른 단계의 움직임. 칩과 아래 타일이 같은 단계를 가리킨다
+      const select = index => {
+        stage = index
         showStop?.()
         showStop = null
-        const stage = f.stages[view.stage]
         bigImg.hidden = !pet.media
         canvas.hidden = Boolean(pet.media)
-        if (pet.media) bigImg.src = webpOf(pet, `stage${view.stage + 1}-${view.motion}`)
-        else if (view.motion === 'idle') paint(canvas, stage.idle)
-        else showStop = play(canvas, stage, pet.frameMs)
-        mark()
-      }
-      // 모션 칸: 쉴 때 · 일할 때 · 움직임의 각 컷
-      const fillMotion = () => {
-        motionStops.forEach(stop => stop())
-        motionStops = []
-        motionGrid.replaceChildren()
-        const stage = f.stages[view.stage]
-        for (const [key, frames, label] of [['idle', stage.idle, t('motionIdle')], ['work', stage, t('motionWork')]]) {
-          const made = tile('grow-tile', frames, label, null, `stage${view.stage + 1}-${key}`)
-          made.el.dataset.motion = key
-          made.el.addEventListener('click', () => {
-            view.motion = key
-            show()
-          })
-          if (made.stop) motionStops.push(made.stop)
-          motionGrid.append(made.el)
-        }
-        stage.work.forEach((frame, i) => {
-          const made = tile('grow-tile cut', frame, t('cut')(i + 1))
-          made.el.tabIndex = -1
-          motionGrid.append(made.el)
-        })
-        motion.hidden = false
-      }
-      const select = index => {
-        view.stage = index
-        fillMotion()
-        show()
+        if (pet.media) bigImg.src = webpOf(pet, `stage${stage + 1}-work`)
+        else showStop = play(canvas, f.stages[stage], pet.frameMs)
+        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === stage))
       }
       if (f.stages.length > 1) {
         chips.hidden = false
@@ -481,7 +439,7 @@ function fillDetail() {
           chip.textContent = t('stage')(i + 1)
           chip.addEventListener('click', () => select(i))
           chips.append(chip)
-          const made = tile('grow-tile', stage, t('stage')(i + 1), t('stageRange')[i] ?? '', `stage${i + 1}-work`)
+          const made = tile(stage, t('stage')(i + 1), t('stageRange')[i] ?? '', `stage${i + 1}-work`)
           made.el.dataset.stage = String(i)
           made.el.addEventListener('click', () => select(i))
           growGrid.append(made.el)
@@ -491,8 +449,7 @@ function fillDetail() {
       select(0)
       detailStop = () => {
         showStop?.()
-        motionStops.forEach(stop => stop())
-        stops.forEach(stop => stop())
+        stops.forEach(stop => stop?.())
       }
     })
     .catch(() => {})

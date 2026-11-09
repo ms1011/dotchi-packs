@@ -152,7 +152,7 @@ dialog {
 }
 dialog::backdrop { background: rgba(20,16,10,.55); }
 /* 상세: 큰 펫(왼쪽 위) · 정보(오른쪽) · 성장 단계(아래 전체 폭) */
-.detail { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); grid-template-areas: "show info" "grow grow" "motion motion"; }
+.detail { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); grid-template-areas: "show info" "grow grow"; }
 .showcase { grid-area: show; display: grid; gap: 12px; padding: 20px 20px 18px; align-content: start; }
 .detail .stage {
   aspect-ratio: auto; min-height: 380px; position: relative; border-radius: 16px;
@@ -183,11 +183,6 @@ img.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: 
 .grow-tile canvas, .grow-tile img.sprite { width: 128px; }
 .grow-tile b { font-size: 14px; }
 .grow-tile span { font-size: 12.5px; color: var(--muted); }
-.motion { grid-area: motion; }
-.motion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
-.motion-grid .grow-tile { padding: 10px 8px; }
-.motion-grid .grow-tile canvas, .motion-grid .grow-tile img.sprite { width: 72px; }
-.motion-grid .cut { cursor: default; background: transparent; }
 .bubble {
   position: absolute; top: 18px; left: 50%; transform: translateX(-50%); max-width: 90%;
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px;
@@ -223,8 +218,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
   .search { flex-basis: 100%; max-width: none; }
   .toolbar > .row:first-child { flex-wrap: wrap; }
   .card { padding: 10px; }
-  .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow" "motion"; }
-  .motion-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow"; }
   .detail .stage { min-height: 260px; }
   .detail .stage canvas, .detail .stage img.big { width: 60%; }
   .grow-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
@@ -340,10 +334,6 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
     <section class="grow" id="d-grow" hidden>
       <header class="grow-head"><h3 data-t="growTitle"></h3></header>
       <div class="grow-grid" id="d-grow-grid"></div>
-    </section>
-    <section class="grow motion" id="d-motion" hidden>
-      <header class="grow-head"><h3 data-t="motionTitle"></h3></header>
-      <div class="motion-grid" id="d-motion-grid"></div>
     </section>
   </div>
 </dialog>
