@@ -4,6 +4,7 @@ import { test } from 'node:test'
 
 import {
   applyLikes,
+  growthOrder,
   detectLang,
   filterPets,
   installCommand,
@@ -149,4 +150,13 @@ test('previewOf: 테마 모양을 따르고, 색이 이상하면 기본 색으�
   assert.equal(warn.rows[2]![0]!.text, 't 12m · Opus 5.5 · 1M')
   assert.equal(previewOf(look, MOODS[2], LABELS).rows[0]![0]!.color, '#ff8fa3')
   assert.equal(previewOf(look, MOODS[0], LABELS).rows[0]![0]!.color, '#000005')
+})
+
+test('growthOrder: 단계마다 움직임을 두 바퀴, 차례로', () => {
+  assert.deepEqual(growthOrder([3, 2]), [
+    [0, 0], [0, 1], [0, 2], [0, 0], [0, 1], [0, 2],
+    [1, 0], [1, 1], [1, 0], [1, 1],
+  ])
+  assert.deepEqual(growthOrder([4], 1), [[0, 0], [0, 1], [0, 2], [0, 3]])
+  assert.deepEqual(growthOrder([]), [])
 })

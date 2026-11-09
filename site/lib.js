@@ -130,3 +130,12 @@ export const previewOf = (look, mood, labels) => {
   ]
   return { status, rows: rows.map(row => row.filter(part => part.text !== '')) }
 }
+
+/**
+ * 자라는 모습의 순서: 단계마다 움직임 컷을 loops바퀴 돈 뒤 다음 단계로.
+ * stageWork는 단계별 움직임 컷 수. [[단계 번호(0부터), 컷 번호], …]
+ */
+export const growthOrder = (stageWork, loops = 2) =>
+  stageWork.flatMap((count, stage) =>
+    Array.from({ length: loops * count }, (_, i) => [stage, i % count]),
+  )

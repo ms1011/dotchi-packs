@@ -37,6 +37,7 @@ test('buildIndex: published이고 팩을 읽을 수 있는 것만, taken은 전�
     created: '2026-10-21',
     updated: '2026-10-21',
     frames: JSON.parse(fixture('art.json')).work.length,
+    stages: 1,
     langs: ['ko', 'en', 'ja', 'zh'],
     frameMs: 250,
     likes: 12,
@@ -127,4 +128,14 @@ test('buildSite: 테마 theme.json을 사이트에 복사하고 index에 모양�
   assert.equal(index.themes[0].look.colors.ok, '#00aaff')
   assert.equal(index.themes[0].look.colors.warn, '#ffd86b')
   assert.equal(index.themes[0].look.faces.ok, '(•ᴗ•)')
+})
+
+test('buildIndex: 단계 그림이 있으면 stages에 단계 수', () => {
+  const staged = (id: string) => {
+    const pack = readPack(id)
+    if (pack === null) return null
+    const art = { ...pack.art, stages: { '2': { idle: pack.art.idle, work: pack.art.work }, '3': { idle: pack.art.idle, work: pack.art.work } } }
+    return { ...pack, art }
+  }
+  assert.equal(buildIndex(registry, staged, {}).pets[0]!.stages, 3)
 })
