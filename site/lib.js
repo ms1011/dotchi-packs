@@ -139,3 +139,6 @@ export const growthOrder = (stageWork, loops = 2) =>
   stageWork.flatMap((count, stage) =>
     Array.from({ length: loops * count }, (_, i) => [stage, i % count]),
   )
+
+/** 카드 제목 옆 진화 표시: 단계가 둘 이상이면 ★n, 아니면 null */
+export const stageBadge = pet => ((pet.stages ?? 1) > 1 ? `★${pet.stages}` : null)

@@ -6,6 +6,7 @@ import {
   detectLang,
   filterPets,
   growthOrder,
+  stageBadge,
   installCommand,
   LANGS,
   likesFromIssues,
@@ -198,13 +199,6 @@ function themeCard(theme) {
     badge.textContent = 'NEW'
     el.querySelector('h3').append(badge)
   }
-  if (pet.stages > 1) {
-    const badge = document.createElement('span')
-    badge.className = 'stage-badge'
-    badge.textContent = `★${pet.stages}`
-    badge.title = t('stages')(pet.stages)
-    el.querySelector('h3').append(badge)
-  }
   el.querySelector('.who').textContent = `@${theme.owner}`
   const likes = el.querySelector('.likes')
   likes.innerHTML = HEART
@@ -265,6 +259,14 @@ function card(pet) {
     const badge = document.createElement('span')
     badge.className = 'new-badge'
     badge.textContent = 'NEW'
+    el.querySelector('h3').append(badge)
+  }
+  const stages = stageBadge(pet)
+  if (stages !== null) {
+    const badge = document.createElement('span')
+    badge.className = 'stage-badge'
+    badge.textContent = stages
+    badge.title = t('stages')(pet.stages)
     el.querySelector('h3').append(badge)
   }
   el.querySelector('.who').textContent = `@${pet.owner}`

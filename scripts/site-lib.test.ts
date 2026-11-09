@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import {
   applyLikes,
   growthOrder,
+  stageBadge,
   detectLang,
   filterPets,
   installCommand,
@@ -159,4 +160,22 @@ test('growthOrder: 단계마다 움직임을 두 바퀴, 차례로', () => {
   ])
   assert.deepEqual(growthOrder([4], 1), [[0, 0], [0, 1], [0, 2], [0, 3]])
   assert.deepEqual(growthOrder([]), [])
+})
+
+test('stageBadge: 단계가 둘 이상이면 ★n', () => {
+  assert.equal(stageBadge({ stages: 3 }), '★3')
+  assert.equal(stageBadge({ stages: 1 }), null)
+  assert.equal(stageBadge({}), null)
+})
+
+test('카드 함수는 자기 인자만 쓴다: 테마 카드가 펫을, 펫 카드가 테마를 부르지 않는다', () => {
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  const body = (name: string) => {
+    const start = app.indexOf(`function ${name}(`)
+    assert.ok(start >= 0, name)
+    const next = app.indexOf('\nfunction ', start + 1)
+    return app.slice(start, next < 0 ? undefined : next)
+  }
+  assert.doesNotMatch(body('themeCard'), /\bpet\b/)
+  assert.match(body('card'), /stageBadge\(pet\)/)
 })
