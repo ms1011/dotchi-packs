@@ -128,7 +128,7 @@ test('buildSite: 테마 theme.json을 사이트에 복사하고 index에 모양�
   assert.equal(index.themes[0].likes, 7)
   assert.equal(index.themes[0].look.colors.ok, '#00aaff')
   assert.equal(index.themes[0].look.colors.warn, '#ffd86b')
-  assert.equal(index.themes[0].look.faces.ok, '(•ᴗ•)')
+  assert.equal(index.themes[0].look.faces.ok, '')
 })
 
 test('buildIndex: 단계 그림이 있으면 stages에 단계 수', () => {
