@@ -19,6 +19,8 @@ export type IndexPet = {
   created: string
   updated: string
   frames: number
+  /** 사이트 빌드가 움직이는 WebP(packs/<id>/stage<n>-idle|work.webp, grow.webp)를 만들었는지 */
+  media?: boolean
   /** 그림이 있는 진화 단계 수 (1이면 단계 그림 없음) */
   stages: 1 | 2 | 3
   langs: Lang[]
@@ -105,7 +107,22 @@ export const likesQuery = (issues: number[]): string =>
 export type BuildDeps = {
   fetchLikes(issues: number[]): Promise<Record<number, number>>
   zip(cwd: string, id: string, out: string): Promise<void>
+  /** 팩 폴더로 outDir에 움직이는 WebP를 만든다. 못 만들면 false (없으면 만들지 않는다) */
+  media?(packDir: string, outDir: string): Promise<boolean>
 }
+
+/** dotchi의 pixels.py webp로 WebP를 만드는 media. 실패하면 경고하고 false */
+export const makeMedia =
+  (python: string, pixels: string) =>
+  async (packDir: string, outDir: string): Promise<boolean> => {
+    try {
+      execFileSync(python, [pixels, 'webp', packDir, outDir], { stdio: ['ignore', 'ignore', 'pipe'] })
+      return true
+    } catch (error) {
+      console.warn(`::warning::Couldn't make WebP for ${packDir}: ${String(error)}`)
+      return false
+    }
+  }
 
 /** outDir에 사이트를 만든다: site/ 파일, 팩 JSON, 팩 zip, 테마 theme.json, index.json */
 export const buildSite = async (outDir: string, deps: BuildDeps, root = '.'): Promise<void> => {
@@ -148,6 +165,7 @@ export const buildSite = async (outDir: string, deps: BuildDeps, root = '.'): Pr
     await mkdir(join(out, 'packs', pet.id), { recursive: true })
     for (const [name, text] of Object.entries(texts.get(pet.id)!)) await writeFile(join(out, 'packs', pet.id, name), text)
     await deps.zip(resolve(root, 'packs'), pet.id, join(out, 'packs', `${pet.id}.dotchi.zip`))
+    if (deps.media !== undefined) pet.media = await deps.media(join(root, 'packs', pet.id), join(out, 'packs', pet.id))
   }
   for (const theme of index.themes) {
     await mkdir(join(out, 'themes', theme.id), { recursive: true })
@@ -172,5 +190,6 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
   await buildSite(process.argv[2] ?? '_site', {
     fetchLikes,
     zip: async (cwd, id, file) => void execFileSync('zip', ['-qr', file, id], { cwd }),
+    media: makeMedia(process.env.PYTHON ?? 'python3', 'dotchi/tools/pixels.py'),
   })
 }

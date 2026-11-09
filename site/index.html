@@ -115,6 +115,7 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; 
   background-size: 16px 16px; background-position: 0 0, 8px 8px;
 }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 75%; height: auto; }
+.stage > img.sprite { width: 75%; }
 .card h3 { margin: 0; font-size: 15.5px; }
 .meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
 .likes { display: inline-flex; align-items: center; gap: 4px; }
@@ -157,7 +158,8 @@ dialog::backdrop { background: rgba(20,16,10,.55); }
   aspect-ratio: auto; min-height: 380px; position: relative; border-radius: 16px;
   background: radial-gradient(ellipse 46% 12% at 50% 86%, rgba(60,40,10,.16), transparent 70%), var(--chip);
 }
-.detail .stage canvas { width: min(300px, 80%); margin-top: 28px; }
+.detail .stage canvas, .detail .stage img.big { width: min(300px, 80%); margin-top: 28px; }
+img.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; height: auto; }
 .info { grid-area: info; }
 .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .chips button {
@@ -178,13 +180,13 @@ dialog::backdrop { background: rgba(20,16,10,.55); }
 .grow-tile .ground { display: grid; justify-items: center; width: 100%; padding-bottom: 6px;
   background: radial-gradient(ellipse 34% 14% at 50% 92%, rgba(60,40,10,.16), transparent 70%); }
 .grow-tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.grow-tile canvas { width: 128px; }
+.grow-tile canvas, .grow-tile img.sprite { width: 128px; }
 .grow-tile b { font-size: 14px; }
 .grow-tile span { font-size: 12.5px; color: var(--muted); }
 .motion { grid-area: motion; }
 .motion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
 .motion-grid .grow-tile { padding: 10px 8px; }
-.motion-grid .grow-tile canvas { width: 72px; }
+.motion-grid .grow-tile canvas, .motion-grid .grow-tile img.sprite { width: 72px; }
 .motion-grid .cut { cursor: default; background: transparent; }
 .bubble {
   position: absolute; top: 18px; left: 50%; transform: translateX(-50%); max-width: 90%;
@@ -224,9 +226,9 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
   .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow" "motion"; }
   .motion-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
   .detail .stage { min-height: 260px; }
-  .detail .stage canvas { width: 60%; }
+  .detail .stage canvas, .detail .stage img.big { width: 60%; }
   .grow-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
-  .grow-tile canvas { width: 80%; }
+  .grow-tile canvas, .grow-tile img.sprite { width: 80%; }
 }
 
 .need { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; color: var(--muted); border-left: 1px solid var(--line); padding-left: 8px; margin-left: 2px; }
@@ -315,7 +317,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
   <button class="close" id="d-close">×</button>
   <div class="detail">
     <div class="showcase">
-      <div class="stage"><div class="bubble" id="d-bubble"></div><canvas id="d-canvas" width="32" height="32"></canvas></div>
+      <div class="stage"><div class="bubble" id="d-bubble"></div><canvas id="d-canvas" width="32" height="32"></canvas><img id="d-img" class="sprite big" alt="" hidden></div>
       <div class="chips" id="d-chips" role="group" hidden></div>
     </div>
     <div class="info">

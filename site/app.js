@@ -100,6 +100,9 @@ const linesOf = id => {
   if (!linesCache.has(id)) linesCache.set(id, fetch(`packs/${id}/lines.json`).then(r => (r.ok ? r.json() : {})).catch(() => ({})))
   return linesCache.get(id)
 }
+/** 사이트 빌드가 만든 움직이는 WebP (pet.media일 때만) */
+const webpOf = (pet, name) => `packs/${pet.id}/${name}.webp`
+const spriteImg = src => Object.assign(document.createElement('img'), { src, alt: '', className: 'sprite', decoding: 'async', loading: 'lazy' })
 const paint = (canvas, src) => {
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, 32, 32)
@@ -273,6 +276,18 @@ function card(pet) {
   likes.innerHTML = HEART
   likes.append(String(pet.likes))
   const canvas = el.querySelector('canvas')
+  if (pet.media) {
+    // 빌드가 만든 WebP: 평소엔 1단계 멈춘 그림, 올리면 자라는 모습
+    const img = spriteImg(webpOf(pet, 'stage1-idle'))
+    canvas.replaceWith(img)
+    const swap = name => () => (img.src = webpOf(pet, name))
+    el.addEventListener('mouseenter', swap('grow'))
+    el.addEventListener('mouseleave', swap('stage1-idle'))
+    el.addEventListener('focus', swap('grow'))
+    el.addEventListener('blur', swap('stage1-idle'))
+    el.addEventListener('click', () => openPet(pet))
+    return el
+  }
   let frames = null
   let stop = null
   const load = () =>
@@ -370,7 +385,10 @@ function fillDetail() {
   detailStop?.()
   clearInterval(bubbleTimer)
   const canvas = $('d-canvas')
+  const bigImg = $('d-img')
   canvas.getContext('2d').clearRect(0, 0, 32, 32)
+  bigImg.hidden = true
+  canvas.hidden = false
   const chips = $('d-chips')
   const grow = $('d-grow')
   const growGrid = $('d-grow-grid')
@@ -387,14 +405,15 @@ function fillDetail() {
       let showStop = null
       let motionStops = []
       const view = { stage: 0, motion: 'work' }
-      const tile = (cls, frames, label, sub) => {
+      // webp가 있으면 그 그림, 없으면(또는 컷 한 장) 캔버스에 그린다
+      const tile = (cls, frames, label, sub, webp) => {
         const el = document.createElement('button')
         el.type = 'button'
         el.className = cls
         const ground = document.createElement('div')
         ground.className = 'ground'
         const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
-        ground.append(small)
+        ground.append(webp && pet.media ? spriteImg(webpOf(pet, webp)) : small)
         const name = document.createElement('b')
         name.textContent = label
         el.append(ground, name)
@@ -403,6 +422,7 @@ function fillDetail() {
           span.textContent = sub
           el.append(span)
         }
+        if (webp && pet.media) return { el, stop: null }
         if (frames.work) return { el, stop: play(small, frames, pet.frameMs) }
         paint(small, frames)
         return { el, stop: null }
@@ -416,7 +436,10 @@ function fillDetail() {
         showStop?.()
         showStop = null
         const stage = f.stages[view.stage]
-        if (view.motion === 'idle') paint(canvas, stage.idle)
+        bigImg.hidden = !pet.media
+        canvas.hidden = Boolean(pet.media)
+        if (pet.media) bigImg.src = webpOf(pet, `stage${view.stage + 1}-${view.motion}`)
+        else if (view.motion === 'idle') paint(canvas, stage.idle)
         else showStop = play(canvas, stage, pet.frameMs)
         mark()
       }
@@ -427,7 +450,7 @@ function fillDetail() {
         motionGrid.replaceChildren()
         const stage = f.stages[view.stage]
         for (const [key, frames, label] of [['idle', stage.idle, t('motionIdle')], ['work', stage, t('motionWork')]]) {
-          const made = tile('grow-tile', frames, label)
+          const made = tile('grow-tile', frames, label, null, `stage${view.stage + 1}-${key}`)
           made.el.dataset.motion = key
           made.el.addEventListener('click', () => {
             view.motion = key
@@ -458,7 +481,7 @@ function fillDetail() {
           chip.textContent = t('stage')(i + 1)
           chip.addEventListener('click', () => select(i))
           chips.append(chip)
-          const made = tile('grow-tile', stage, t('stage')(i + 1), t('stageRange')[i] ?? '')
+          const made = tile('grow-tile', stage, t('stage')(i + 1), t('stageRange')[i] ?? '', `stage${i + 1}-work`)
           made.el.dataset.stage = String(i)
           made.el.addEventListener('click', () => select(i))
           growGrid.append(made.el)

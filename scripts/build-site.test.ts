@@ -1,10 +1,11 @@
+import { execFileSync } from 'node:child_process'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { buildIndex, buildSite, likesQuery } from './build-site.ts'
+import { buildIndex, buildSite, likesQuery, makeMedia } from './build-site.ts'
 import type { Registry } from './decide.ts'
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/squirrel/${name}`, import.meta.url), 'utf8')
@@ -138,4 +139,33 @@ test('buildIndex: 단계 그림이 있으면 stages에 단계 수', () => {
     return { ...pack, art }
   }
   assert.equal(buildIndex(registry, staged, {}).pets[0]!.stages, 3)
+})
+
+test('buildSite: 펫마다 움직이는 WebP를 만들고 index에 media 표시', async () => {
+  const root = repo()
+  const out = join(root, '_site')
+  const calls: string[][] = []
+  await buildSite(out, { fetchLikes: async () => ({}), zip: async () => {}, media: async (pack, dir) => (calls.push([pack, dir]), true) }, root)
+  assert.deepEqual(calls, [[join(root, 'packs', 'squirrel'), join(out, 'packs', 'squirrel')]])
+  assert.equal(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).pets[0].media, true)
+})
+
+test('buildSite: WebP를 못 만들면 media 없이 계속 (사이트는 캔버스로 그린다)', async () => {
+  const root = repo()
+  const out = join(root, '_site')
+  await buildSite(out, { fetchLikes: async () => ({}), zip: async () => {}, media: async () => false }, root)
+  assert.equal(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).pets[0].media, false)
+})
+
+test('buildSite: 실제 pixels.py로 WebP를 만든다', async () => {
+  const python = process.env.PYTHON ?? 'python3'
+  try {
+    execFileSync(python, ['-c', 'import PIL'])
+  } catch {
+    return // Pillow가 없는 곳에서는 건너뛴다 (CI는 설치한다)
+  }
+  const root = repo()
+  const out = join(root, '_site')
+  await buildSite(out, { fetchLikes: async () => ({}), zip: async () => {}, media: makeMedia(python, new URL('../dotchi/tools/pixels.py', import.meta.url).pathname) }, root)
+  for (const name of ['grow.webp', 'stage1-idle.webp', 'stage1-work.webp']) assert.ok(existsSync(join(out, 'packs/squirrel', name)), name)
 })
