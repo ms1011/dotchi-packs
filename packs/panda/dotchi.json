@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "A laid-back panda from China that munches bamboo while Claude works.",
-  "frameMs": 300
+  "frameMs": 300,
+  "icon": "🎋"
 }
