@@ -3,7 +3,7 @@ import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { parseArt } from '../dotchi/hooks/dots.ts'
+import { parseArt, stageCount } from '../dotchi/hooks/dots.ts'
 import { LANGS, parseLines, parseMeta } from '../dotchi/hooks/packs.ts'
 import { parseTheme } from '../dotchi/hooks/theme.ts'
 import type { Art, Lang, Look, PackLines, PackMeta, ThemeMeta } from '../dotchi/types/index.d.ts'
@@ -19,6 +19,8 @@ export type IndexPet = {
   created: string
   updated: string
   frames: number
+  /** 그림이 있는 진화 단계 수 (1이면 단계 그림 없음) */
+  stages: 1 | 2 | 3
   langs: Lang[]
   frameMs: number
   likes: number
@@ -65,6 +67,7 @@ export const buildIndex = (
       created: entry.created,
       updated: entry.updated,
       frames: pack.art.work.length,
+      stages: stageCount(pack.art),
       langs: LANGS.filter(lang => pack.lines[lang] !== undefined),
       frameMs: pack.meta.frameMs ?? 250,
       likes: likes[entry.issue] ?? 0,

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { gzipSync } from 'node:zlib'
 
@@ -44,7 +44,7 @@ test('허용 안 된 파일 이름 → badFile', () => {
   for (const name of ['../x', 'source/a.png', 'grid/../../a.txt', '/etc/passwd', 'grid/1.TXT']) {
     assert.deepEqual(decodeBundle(make({ ...squirrel(), [name]: 'x' })), { reject: 'badFile', detail: name })
   }
-  const many = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`grid/${i}.txt`, 'g']))
+  const many = Object.fromEntries(Array.from({ length: 22 }, (_, i) => [`grid/${i}.txt`, 'g']))
   assert.equal((decodeBundle(make({ ...squirrel(), ...many })) as { reject: string }).reject, 'badFile')
 })
 
@@ -97,4 +97,40 @@ test('플러그인과 같은 길: python3 -m gzip으로 만든 묶음을 풀 수
   const files = decodeBundle(base64)
   assert.ok(!('reject' in files))
   assert.ok('meta' in checkPack(files as Record<string, string>, 'squirrel'))
+})
+
+/** 플러그인의 다람쥐 팩 그대로: 세 JSON과 grid 격자 전부 (단계 그림 포함) */
+const realSquirrel = () => {
+  const dir = new URL('../dotchi/characters/squirrel/', import.meta.url)
+  const files: Record<string, string> = {}
+  for (const name of ['dotchi.json', 'art.json', 'lines.json']) files[name] = readFileSync(new URL(name, dir), 'utf8')
+  for (const name of readdirSync(new URL('grid/', dir))) files[`grid/${name}`] = readFileSync(new URL(`grid/${name}`, dir), 'utf8')
+  return files
+}
+
+test('단계 그림이 든 실제 팩(파일 18개)을 받고 art.stages를 싣는다', () => {
+  const files = realSquirrel()
+  assert.equal(Object.keys(files).length, 18)
+  const base64 = make(files)
+  assert.ok(base64.length < 60000, `bundle is ${base64.length} chars`)
+  const decoded = decodeBundle(base64)
+  assert.ok(!('reject' in decoded), JSON.stringify(decoded))
+  const pack = checkPack(decoded as Record<string, string>, 'squirrel')
+  assert.ok('meta' in pack)
+  assert.deepEqual(Object.keys(pack.art.stages ?? {}).sort(), ['2', '3'])
+})
+
+test('파일이 24개를 넘으면 badFile', () => {
+  const files: Record<string, string> = { ...squirrel() }
+  for (let i = 0; i < 22; i++) files[`grid/x${i}.txt`] = '.'
+  assert.equal(Object.keys(files).length, 25)
+  assert.equal((decodeBundle(make(files)) as { reject: string }).reject, 'badFile')
+  delete files['grid/x0.txt']
+  assert.ok(!('reject' in (decodeBundle(make(files)) as object)))
+})
+
+test('단계 그림이 달라도 1단계가 같으면 같은 그림으로 본다', () => {
+  const art = JSON.parse(fixture('art.json'))
+  const staged = { ...art, stages: { '2': { idle: art.idle, work: art.work } } }
+  assert.equal(artHash(staged), artHash(art))
 })

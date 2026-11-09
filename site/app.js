@@ -5,6 +5,8 @@ import {
   applyLikes,
   detectLang,
   filterPets,
+  growthOrder,
+  stageBadge,
   installCommand,
   LANGS,
   likesFromIssues,
@@ -70,14 +72,25 @@ const frameCanvas = frame => {
   return canvas
 }
 const artCache = new Map()
-/** 펫의 컷들 (멈춤 1장 + 움직임) */
+/**
+ * 펫의 컷들 (멈춤 1장 + 움직임) = 1단계. stages는 단계마다 같은 모양, 0이 1단계.
+ * 빠진 단계는 바로 아래 단계 그림
+ */
 const framesOf = id => {
   if (!artCache.has(id)) {
     artCache.set(
       id,
       fetch(`packs/${id}/art.json`)
         .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
-        .then(art => ({ idle: frameCanvas(art.idle), work: art.work.map(frameCanvas) })),
+        .then(art => {
+          const first = { idle: frameCanvas(art.idle), work: art.work.map(frameCanvas) }
+          const stages = [first]
+          for (const key of ['2', '3']) {
+            const stage = art.stages?.[key]
+            if (stage) stages.push({ idle: frameCanvas(stage.idle), work: stage.work.map(frameCanvas) })
+          }
+          return { ...first, stages }
+        }),
     )
   }
   return artCache.get(id)
@@ -97,6 +110,22 @@ const play = (canvas, frames, frameMs) => {
   let i = 0
   paint(canvas, frames.work[0])
   const timer = setInterval(() => paint(canvas, frames.work[++i % frames.work.length]), frameMs)
+  return () => clearInterval(timer)
+}
+/** 단계가 있으면 1→2→3단계로 자라는 모습을 되풀이한다. 없으면 play와 같다 */
+const playGrowth = (canvas, frames, frameMs) => {
+  if (frames.stages.length < 2) return play(canvas, frames, frameMs)
+  const order = growthOrder(frames.stages.map(stage => stage.work.length))
+  let i = 0
+  const show = () => {
+    const [stage, cut] = order[i % order.length]
+    paint(canvas, frames.stages[stage].work[cut])
+  }
+  show()
+  const timer = setInterval(() => {
+    i++
+    show()
+  }, frameMs)
   return () => clearInterval(timer)
 }
 
@@ -232,6 +261,14 @@ function card(pet) {
     badge.textContent = 'NEW'
     el.querySelector('h3').append(badge)
   }
+  const stages = stageBadge(pet)
+  if (stages !== null) {
+    const badge = document.createElement('span')
+    badge.className = 'stage-badge'
+    badge.textContent = stages
+    badge.title = t('stages')(pet.stages)
+    el.querySelector('h3').append(badge)
+  }
   el.querySelector('.who').textContent = `@${pet.owner}`
   const likes = el.querySelector('.likes')
   likes.innerHTML = HEART
@@ -253,7 +290,7 @@ function card(pet) {
   }
   const start = () => {
     if (stop !== null || frames === null) return
-    stop = play(canvas, frames, pet.frameMs)
+    stop = playGrowth(canvas, frames, pet.frameMs)
     stops.push(stop)
   }
   const end = () => {
@@ -314,7 +351,12 @@ function fillDetail() {
   $('d-desc').textContent = pet.description || t('noDesc')
   const facts = $('d-facts')
   facts.replaceChildren(
-    ...[pet.id, t('frames')(pet.frames), `💬 ${pet.langs.map(l => LANG_NAMES[l]).join(' · ')}`].map((text, i) => {
+    ...[
+      pet.id,
+      t('frames')(pet.frames),
+      ...((pet.stages ?? 1) > 1 ? [t('stages')(pet.stages)] : []),
+      `💬 ${pet.langs.map(l => LANG_NAMES[l]).join(' · ')}`,
+    ].map((text, i) => {
       const span = document.createElement('span')
       if (i === 0) span.className = 'mono'
       span.textContent = text
@@ -329,9 +371,27 @@ function fillDetail() {
   clearInterval(bubbleTimer)
   const canvas = $('d-canvas')
   canvas.getContext('2d').clearRect(0, 0, 32, 32)
+  const strip = $('d-stages')
+  strip.replaceChildren()
+  strip.hidden = true
   framesOf(pet.id)
     .then(f => {
-      if (current === pet) detailStop = play(canvas, f, pet.frameMs)
+      if (current !== pet) return
+      const stops = [play(canvas, f, pet.frameMs)]
+      // 단계가 있으면 아래에 단계마다 작은 그림을 나란히, 모두 움직인다
+      if (f.stages.length > 1) {
+        strip.hidden = false
+        f.stages.forEach((stage, i) => {
+          const cell = document.createElement('figure')
+          const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
+          const label = document.createElement('figcaption')
+          label.textContent = t('stage')(i + 1)
+          cell.append(small, label)
+          strip.append(cell)
+          stops.push(play(small, stage, pet.frameMs))
+        })
+      }
+      detailStop = () => stops.forEach(stop => stop())
     })
     .catch(() => {})
   const bubble = $('d-bubble')

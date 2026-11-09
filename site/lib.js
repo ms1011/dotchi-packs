@@ -130,3 +130,15 @@ export const previewOf = (look, mood, labels) => {
   ]
   return { status, rows: rows.map(row => row.filter(part => part.text !== '')) }
 }
+
+/**
+ * 자라는 모습의 순서: 단계마다 움직임 컷을 loops바퀴 돈 뒤 다음 단계로.
+ * stageWork는 단계별 움직임 컷 수. [[단계 번호(0부터), 컷 번호], …]
+ */
+export const growthOrder = (stageWork, loops = 2) =>
+  stageWork.flatMap((count, stage) =>
+    Array.from({ length: loops * count }, (_, i) => [stage, i % count]),
+  )
+
+/** 카드 제목 옆 진화 표시: 단계가 둘 이상이면 ★n, 아니면 null */
+export const stageBadge = pet => ((pet.stages ?? 1) > 1 ? `★${pet.stages}` : null)

@@ -4,6 +4,8 @@ import { test } from 'node:test'
 
 import {
   applyLikes,
+  growthOrder,
+  stageBadge,
   detectLang,
   filterPets,
   installCommand,
@@ -149,4 +151,31 @@ test('previewOf: 테마 모양을 따르고, 색이 이상하면 기본 색으�
   assert.equal(warn.rows[2]![0]!.text, 't 12m · Opus 5.5 · 1M')
   assert.equal(previewOf(look, MOODS[2], LABELS).rows[0]![0]!.color, '#ff8fa3')
   assert.equal(previewOf(look, MOODS[0], LABELS).rows[0]![0]!.color, '#000005')
+})
+
+test('growthOrder: 단계마다 움직임을 두 바퀴, 차례로', () => {
+  assert.deepEqual(growthOrder([3, 2]), [
+    [0, 0], [0, 1], [0, 2], [0, 0], [0, 1], [0, 2],
+    [1, 0], [1, 1], [1, 0], [1, 1],
+  ])
+  assert.deepEqual(growthOrder([4], 1), [[0, 0], [0, 1], [0, 2], [0, 3]])
+  assert.deepEqual(growthOrder([]), [])
+})
+
+test('stageBadge: 단계가 둘 이상이면 ★n', () => {
+  assert.equal(stageBadge({ stages: 3 }), '★3')
+  assert.equal(stageBadge({ stages: 1 }), null)
+  assert.equal(stageBadge({}), null)
+})
+
+test('카드 함수는 자기 인자만 쓴다: 테마 카드가 펫을, 펫 카드가 테마를 부르지 않는다', () => {
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  const body = (name: string) => {
+    const start = app.indexOf(`function ${name}(`)
+    assert.ok(start >= 0, name)
+    const next = app.indexOf('\nfunction ', start + 1)
+    return app.slice(start, next < 0 ? undefined : next)
+  }
+  assert.doesNotMatch(body('themeCard'), /\bpet\b/)
+  assert.match(body('card'), /stageBadge\(pet\)/)
 })

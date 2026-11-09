@@ -10,7 +10,8 @@ import type { Art, Look, PackLines, PackMeta, ThemeMeta } from '../dotchi/types/
 export const BUNDLE_FILE = /^(dotchi\.json|art\.json|lines\.json|grid\/[a-z0-9_-]{1,16}\.txt)$/
 const MAX_BASE64 = 60000
 const MAX_UNZIPPED = 512 * 1024
-const MAX_FILES = 12
+/** 세 JSON + 단계(1~3)마다 격자 최대 6장 = 21 */
+const MAX_FILES = 24
 /** 사이트용 글자 제한 */
 export const LIMITS = { name: 40, description: 300, line: 80, linesPerKind: 30 }
 
@@ -42,7 +43,7 @@ export const extractBundle = (body: string): string | Reject => {
   return blocks[0]![1]!.trim()
 }
 
-/** base64 → gunzip(크기 상한) → { format: 1, files }. 팩 파일 이름만, 12개까지 */
+/** base64 → gunzip(크기 상한) → { format: 1, files }. 팩 파일 이름만, 24개까지 */
 export const decodeBundle = (base64: string): Record<string, string> | Reject => {
   if (base64.length > MAX_BASE64) return { reject: 'tooBig' }
   if (!/^[A-Za-z0-9+/=\s]+$/.test(base64)) return { reject: 'badBundle' }
