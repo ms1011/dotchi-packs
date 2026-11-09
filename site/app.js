@@ -189,7 +189,7 @@ function drawMood(box, look, mood, rows = 3) {
   }
   box.append(panel)
 }
-/** 괜찮을 때 → 배부를 때 → 꽉 찼을 때를 되풀이한다. 멈추는 함수를 돌려준다 */
+/** 여유 → 주의 → 위험를 되풀이한다. 멈추는 함수를 돌려준다 */
 const cycleMoods = (box, look, rows) => {
   let i = 0
   drawMood(box, look, MOODS[0], rows)
@@ -201,7 +201,7 @@ function themeCard(theme) {
   const el = document.createElement('button')
   el.className = 'card tcard'
   el.innerHTML = '<div class="term"></div><h3><span class="title"></span></h3><div class="meta"><span class="who"></span><span class="likes"></span></div>'
-  // 평소엔 괜찮을 때, 올리면 배부를 때·꽉 찼을 때까지 차례로
+  // 평소엔 여유, 올리면 주의·위험까지 차례로
   const term = el.querySelector('.term')
   drawMood(term, theme.look, MOODS[0], 2)
   let stop = null

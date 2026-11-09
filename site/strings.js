@@ -24,8 +24,8 @@ export const STRINGS = {
     themes: '상태 줄 테마', themeCount: n => `테마 ${n}개`, themeEmpty: '찾는 테마가 없어요.',
     themePasteHint: 'Claude Code에 붙여 넣으면 설치돼요. 고를 때는 /dotchi theme <id>, 내 테마는 /dotchi theme new 로 만들고 /dotchi theme share 로 올려요.',
     themeDl: 'theme.json 받기', petNote: '라벤더색 얼굴은 실제로는 펫 그림의 대표색으로 나와요.',
-    moodOk: '괜찮을 때', moodWarn: '배부를 때', moodDanger: '꽉 찼을 때', statusLine: '상태 줄', panel: '옆 패널',
-    gaugeFull: '배부름', gaugeWeek: '주간',
+    moodOk: '여유', moodWarn: '주의', moodDanger: '위험', statusLine: '상태 줄', panel: '옆 패널',
+    gaugeFull: '세션', gaugeWeek: '주간',
   },
   en: {
     heroTitle: 'Any picture, a pixel pet.<br>Keep it beside you in Claude Code.',
@@ -51,8 +51,8 @@ export const STRINGS = {
     themes: 'Status-line themes', themeCount: n => `${n} themes`, themeEmpty: 'No themes found.',
     themePasteHint: 'Paste it into Claude Code to install. Pick one with /dotchi theme <id>, make your own with /dotchi theme new and share it with /dotchi theme share.',
     themeDl: 'Download theme.json', petNote: 'The lavender face shows in your pet\'s own color.',
-    moodOk: 'All good', moodWarn: 'Getting full', moodDanger: 'Stuffed', statusLine: 'status line', panel: 'side panel',
-    gaugeFull: 'Full', gaugeWeek: 'Week',
+    moodOk: 'OK', moodWarn: 'Warning', moodDanger: 'Danger', statusLine: 'status line', panel: 'side panel',
+    gaugeFull: 'Session', gaugeWeek: 'Week',
   },
   ja: {
     heroTitle: 'どんな絵もピクセルペットに。<br>Claude Code のそばに。',
@@ -78,8 +78,8 @@ export const STRINGS = {
     themes: 'ステータスラインのテーマ', themeCount: n => `テーマ ${n} 件`, themeEmpty: 'テーマが見つかりません。',
     themePasteHint: 'Claude Code に貼り付けるとインストールされます。選ぶときは /dotchi theme <id>、自分のテーマは /dotchi theme new で作り /dotchi theme share で共有します。',
     themeDl: 'theme.json をダウンロード', petNote: 'ラベンダー色の顔は、実際にはペットの代表色で表示されます。',
-    moodOk: 'ふだん', moodWarn: 'おなかいっぱい', moodDanger: 'パンパン', statusLine: 'ステータスライン', panel: 'サイドパネル',
-    gaugeFull: '満腹', gaugeWeek: '週',
+    moodOk: '余裕', moodWarn: '注意', moodDanger: '危険', statusLine: 'ステータスライン', panel: 'サイドパネル',
+    gaugeFull: 'セッション', gaugeWeek: '週',
   },
   zh: {
     heroTitle: '把任何图片变成像素宠物，<br>让它陪在 Claude Code 旁边。',
@@ -105,8 +105,8 @@ export const STRINGS = {
     themes: '状态栏主题', themeCount: n => `${n} 个主题`, themeEmpty: '没有找到主题。',
     themePasteHint: '粘贴到 Claude Code 即可安装。用 /dotchi theme <id> 切换，用 /dotchi theme new 制作自己的主题，再用 /dotchi theme share 分享。',
     themeDl: '下载 theme.json', petNote: '薰衣草色的表情实际会显示为宠物的代表色。',
-    moodOk: '正常', moodWarn: '快吃饱了', moodDanger: '吃撑了', statusLine: '状态栏', panel: '侧边面板',
-    gaugeFull: '饱腹', gaugeWeek: '每周',
+    moodOk: '正常', moodWarn: '注意', moodDanger: '危险', statusLine: '状态栏', panel: '侧边面板',
+    gaugeFull: '会话', gaugeWeek: '每周',
   },
 };
 export const LANG_NAMES = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文' };
