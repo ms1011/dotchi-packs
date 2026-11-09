@@ -9,5 +9,6 @@
   },
   "author": "dotchi",
   "description": "A proud bald eagle from the USA that soars over your code.",
-  "frameMs": 180
+  "frameMs": 180,
+  "icon": "🪶"
 }
