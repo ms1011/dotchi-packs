@@ -124,14 +124,14 @@ test('themeFromQuery·themeInstallCommand', () => {
 
 test('previewOf: 기본 모양이면 플러그인과 같은 상태 줄, 강조색 pet은 라벤더', () => {
   const ok = previewOf({}, MOODS[0], LABELS)
-  assert.equal(ok.status, '🐾 ♥♥♡♡♡ 40% · ⚡ 41% · ⎇ main')
+  assert.equal(ok.status, '🐾 ★★☆ · ♥♥♡♡♡ 40% · ⚡ 41% · ⎇ main')
   assert.deepEqual(ok.rows[0], [
     { text: '(•ᴗ•)', color: '#b8a6ff' },
     { text: ' 배부름 ', color: '#9a9ab0' },
     { text: '▰▰▰▰▱▱▱▱▱▱ 40%', color: '#8fd9b6' },
   ])
   const danger = previewOf({}, MOODS[2], LABELS)
-  assert.equal(danger.status, '🐾 ♥♥♥♥♥ 93% (×_×) /compact · ⚡ 97% 🥱 · ⎇ main')
+  assert.equal(danger.status, '🐾 ★★★ · ♥♥♥♥♥ 93% (×_×) /compact · ⚡ 97% 🥱 · ⎇ main')
   assert.equal(danger.rows[0]![0]!.color, '#ff8fa3')
   assert.deepEqual(danger.rows[1]!.at(-1), { text: ' 🥱', color: '#9a9ab0' })
 })
@@ -145,7 +145,7 @@ test('previewOf: 테마 모양을 따르고, 색이 이상하면 기본 색으�
     symbols: { week: 'wk', tired: 'zz', reset: '@', time: 't' },
   }
   const warn = previewOf(look, MOODS[1], LABELS)
-  assert.equal(warn.status, '🐾 ####. 78% B · wk 83% · ⎇ main')
+  assert.equal(warn.status, '🐾 ★★★ · ####. 78% B · wk 83% · ⎇ main')
   assert.deepEqual(warn.rows[0]![0], { text: 'B', color: '#000002' })
   assert.deepEqual(warn.rows[1]!.at(-1), { text: ' @ 09:00', color: '#000004' })
   assert.equal(warn.rows[2]![0]!.text, 't 12m · Opus 5.5 · 1M')
@@ -201,4 +201,11 @@ test('부연 설명 문장은 화면에 넣지 않는다', () => {
   for (const key of ['pasteHint', 'likeHint', 'firstTime', 'needGithub', 'growHint', 'petNote', 'themePasteHint', 's1Body', 's2Body', 's3Body']) {
     assert.doesNotMatch(html, new RegExp(`data-t="${key}"`), key)
   }
+})
+
+test('테마 상세는 장면 칩 하나로 바꾸고, 같은 이름표를 되풀이하지 않는다', () => {
+  const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8')
+  assert.match(html, /id="t-moods"/)
+  const app = readFileSync(new URL('../site/app.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(app, /t\('statusLine'\)|t\('panel'\)/)
 })
