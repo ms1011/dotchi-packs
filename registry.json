@@ -64,6 +64,15 @@
       "updated": "2026-11-09",
       "artHash": null,
       "state": "published"
+    },
+    "candy": {
+      "ownerId": 64572078,
+      "ownerLogin": "ms1011",
+      "issue": 19,
+      "created": "2026-11-09",
+      "updated": "2026-11-09",
+      "artHash": null,
+      "state": "published"
     }
   }
 }
