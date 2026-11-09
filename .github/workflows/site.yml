@@ -25,10 +25,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # 펫마다 움직이는 WebP를 만든다 (dotchi/tools/pixels.py webp)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --quiet pillow
       - run: node --test 'scripts/*.test.ts'
+        env:
+          PYTHON: python
       - run: node scripts/build-site.ts _site
         env:
           GH_TOKEN: ${{ github.token }}
+          PYTHON: python
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

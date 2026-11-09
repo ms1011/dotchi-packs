@@ -115,16 +115,12 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; 
   background-size: 16px 16px; background-position: 0 0, 8px 8px;
 }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 75%; height: auto; }
+.stage > img.sprite { width: 75%; }
 .card h3 { margin: 0; font-size: 15.5px; }
 .meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
 .likes { display: inline-flex; align-items: center; gap: 4px; }
 .likes svg { color: var(--heart); }
 .stage-badge { font-size: 11px; color: var(--muted); margin-left: 6px; vertical-align: 2px; font-weight: 600; }
-.detail .stage:has(.stages:not([hidden])) #d-canvas { width: 50%; margin-bottom: 64px; }
-.stages { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 8px; }
-.stages figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.stages canvas { width: 48px; }
-.stages figcaption { font-size: 11px; color: var(--muted); }
 .new-badge { font-size: 11px; background: var(--accent); color: var(--accent-ink); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; font-weight: 600; }
 /* 탭: 펫 / 상태 줄 테마 */
 .tabs { display: inline-flex; gap: 4px; }
@@ -152,12 +148,41 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 75%; h
 /* 상세 */
 dialog {
   border: 0; padding: 0; border-radius: 20px; background: var(--surface); color: var(--ink);
-  width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 30px 80px -20px rgba(0,0,0,.5);
+  width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 30px 80px -20px rgba(0,0,0,.5);
 }
 dialog::backdrop { background: rgba(20,16,10,.55); }
-.detail { display: grid; grid-template-columns: 300px minmax(0,1fr); }
-.detail .stage { border-radius: 0; aspect-ratio: auto; min-height: 300px; position: relative; }
-.detail canvas { width: 70%; }
+/* 상세: 큰 펫(왼쪽 위) · 정보(오른쪽) · 성장 단계(아래 전체 폭) */
+.detail { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); grid-template-areas: "show info" "grow grow"; }
+.showcase { grid-area: show; display: grid; gap: 12px; padding: 20px 20px 18px; align-content: start; }
+.detail .stage {
+  aspect-ratio: auto; min-height: 380px; position: relative; border-radius: 16px;
+  background: radial-gradient(ellipse 46% 12% at 50% 86%, rgba(60,40,10,.16), transparent 70%), var(--chip);
+}
+.detail .stage canvas, .detail .stage img.big { width: min(300px, 80%); margin-top: 28px; }
+img.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; height: auto; }
+.info { grid-area: info; }
+.chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.chips button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.chips button:focus-visible, .grow-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grow { grid-area: grow; border-top: 1px solid var(--line); padding: 18px 20px 22px; }
+.grow-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.grow-head h3 { margin: 0; font-size: 17px; }
+.grow-head .hint { margin: 0; }
+.grow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.grow-tile {
+  display: grid; justify-items: center; gap: 4px; padding: 14px 10px 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--chip); font: inherit; color: var(--ink); cursor: pointer;
+}
+.grow-tile .ground { display: grid; justify-items: center; width: 100%; padding-bottom: 6px;
+  background: radial-gradient(ellipse 34% 14% at 50% 92%, rgba(60,40,10,.16), transparent 70%); }
+.grow-tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.grow-tile canvas, .grow-tile img.sprite { width: 128px; }
+.grow-tile b { font-size: 14px; }
+.grow-tile span { font-size: 12.5px; color: var(--muted); }
 .bubble {
   position: absolute; top: 18px; left: 50%; transform: translateX(-50%); max-width: 90%;
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px;
@@ -174,7 +199,7 @@ dialog::backdrop { background: rgba(20,16,10,.55); }
 .btn-ghost { background: var(--chip); color: var(--ink); }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hint { color: var(--muted); font-size: 12.5px; margin: -6px 0 0; }
-.close { position: absolute; top: 14px; right: 14px; background: var(--chip); border: 0; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ink); font-size: 18px; line-height: 1; }
+.close { position: absolute; z-index: 2; top: 14px; right: 14px; background: var(--chip); border: 0; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ink); font-size: 18px; line-height: 1; }
 .facts { display: flex; gap: 6px; flex-wrap: wrap; }
 .facts span { background: var(--chip); border-radius: 6px; padding: 2px 8px; font-size: 12.5px; color: var(--muted); }
 .first-time { background: var(--chip); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
@@ -193,9 +218,11 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
   .search { flex-basis: 100%; max-width: none; }
   .toolbar > .row:first-child { flex-wrap: wrap; }
   .card { padding: 10px; }
-  .detail { grid-template-columns: minmax(0,1fr); }
-  .detail .stage { min-height: 220px; }
-  .detail canvas { width: 45%; }
+  .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow"; }
+  .detail .stage { min-height: 260px; }
+  .detail .stage canvas, .detail .stage img.big { width: 60%; }
+  .grow-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .grow-tile canvas, .grow-tile img.sprite { width: 80%; }
 }
 
 .need { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; color: var(--muted); border-left: 1px solid var(--line); padding-left: 8px; margin-left: 2px; }
@@ -241,19 +268,16 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
     <div class="step">
       <span class="n">01</span>
       <h3 data-t="s1Title"></h3>
-      <p data-t="s1Body"></p>
       <div class="cmd"><code>/plugin install dotchi --marketplace ms1011/dotchi</code><button class="copy sm" data-copy="/plugin install dotchi --marketplace ms1011/dotchi"></button></div>
     </div>
     <div class="step">
       <span class="n">02</span>
       <h3 data-t="s2Title"></h3>
-      <p data-t="s2Body"></p>
       <div class="cmd"><code>/dotchi install &lt;id&gt;</code></div>
     </div>
     <div class="step">
       <span class="n">03</span>
       <h3 data-t="s3Title"></h3>
-      <p data-t="s3Body"></p>
       <div class="cmd"><code>/dotchi share &lt;id&gt;</code></div>
     </div>
   </section>
@@ -284,10 +308,13 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
 </div>
 
 <dialog id="dlg" aria-labelledby="d-name">
+  <button class="close" id="d-close">×</button>
   <div class="detail">
-    <div class="stage"><div class="bubble" id="d-bubble"></div><canvas id="d-canvas" width="32" height="32"></canvas><div class="stages" id="d-stages" hidden></div></div>
+    <div class="showcase">
+      <div class="stage"><div class="bubble" id="d-bubble"></div><canvas id="d-canvas" width="32" height="32"></canvas><img id="d-img" class="sprite big" alt="" hidden></div>
+      <div class="chips" id="d-chips" role="group" hidden></div>
+    </div>
     <div class="info">
-      <button class="close" id="d-close">×</button>
       <div>
         <h2 id="d-name"></h2>
         <div class="by" id="d-by"></div>
@@ -295,18 +322,19 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
       <p class="desc" id="d-desc"></p>
       <div class="facts" id="d-facts"></div>
       <div class="install"><code id="d-cmd"></code><button class="copy" id="d-copy"></button></div>
-      <p class="hint" data-t="pasteHint"></p>
+      
       <div class="row">
         <a class="btn btn-ghost" id="d-like" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="color:var(--heart)" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>
           <span id="d-like-n"></span>
-          <span class="need"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span data-t="needGithub"></span></span>
         </a>
         <a class="btn btn-ghost" id="d-zip" href="#" download data-t="zip"></a>
       </div>
-      <p class="hint" data-t="likeHint"></p>
-      <div class="first-time" data-t="firstTime"></div>
     </div>
+    <section class="grow" id="d-grow" hidden>
+      <header class="grow-head"><h3 data-t="growTitle"></h3></header>
+      <div class="grow-grid" id="d-grow-grid"></div>
+    </section>
   </div>
 </dialog>
 
@@ -320,9 +348,9 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
       </div>
       <p class="desc" id="t-desc"></p>
       <div class="term big" id="t-preview"></div>
-      <p class="hint" id="t-petnote" data-t="petNote"></p>
+      
       <div class="install"><code id="t-cmd"></code><button class="copy" id="t-copy"></button></div>
-      <p class="hint" data-t="themePasteHint"></p>
+      
       <div class="row">
         <a class="btn btn-ghost" id="t-like" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="color:var(--heart)" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>
@@ -330,8 +358,6 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
         </a>
         <a class="btn btn-ghost" id="t-json" href="#" download data-t="themeDl"></a>
       </div>
-      <p class="hint" data-t="likeHint"></p>
-      <div class="first-time" data-t="firstTime"></div>
     </div>
   </div>
 </dialog>

@@ -100,6 +100,9 @@ const linesOf = id => {
   if (!linesCache.has(id)) linesCache.set(id, fetch(`packs/${id}/lines.json`).then(r => (r.ok ? r.json() : {})).catch(() => ({})))
   return linesCache.get(id)
 }
+/** 사이트 빌드가 만든 움직이는 WebP (pet.media일 때만) */
+const webpOf = (pet, name) => `packs/${pet.id}/${name}.webp`
+const spriteImg = src => Object.assign(document.createElement('img'), { src, alt: '', className: 'sprite', decoding: 'async', loading: 'lazy' })
 const paint = (canvas, src) => {
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, 32, 32)
@@ -225,7 +228,6 @@ function fillThemeDetail() {
   const box = $('t-preview')
   box.replaceChildren()
   for (const mood of MOODS) drawMood(box, theme.look, mood, true)
-  $('t-petnote').hidden = theme.look?.colors?.accent !== 'pet'
   $('t-cmd').textContent = themeInstallCommand(theme.id)
   $('t-like-n').textContent = t('like')(theme.likes)
   $('t-like').href = `${REPO}/issues/${theme.issue}`
@@ -274,6 +276,18 @@ function card(pet) {
   likes.innerHTML = HEART
   likes.append(String(pet.likes))
   const canvas = el.querySelector('canvas')
+  if (pet.media) {
+    // 빌드가 만든 WebP: 평소엔 1단계 멈춘 그림, 올리면 자라는 모습
+    const img = spriteImg(webpOf(pet, 'stage1-idle'))
+    canvas.replaceWith(img)
+    const swap = name => () => (img.src = webpOf(pet, name))
+    el.addEventListener('mouseenter', swap('grow'))
+    el.addEventListener('mouseleave', swap('stage1-idle'))
+    el.addEventListener('focus', swap('grow'))
+    el.addEventListener('blur', swap('stage1-idle'))
+    el.addEventListener('click', () => openPet(pet))
+    return el
+  }
   let frames = null
   let stop = null
   const load = () =>
@@ -325,6 +339,8 @@ function drawHero() {
 
 const dlg = $('dlg')
 let detailStop = null
+/** 상세를 채울 때마다 하나씩: 늦게 온 그림이 새 화면을 덮지 않게 */
+let detailGeneration = 0
 let bubbleTimer = null
 
 /** 주소의 ?pet= / ?theme= 를 바꾼다 (공유할 수 있는 주소) */
@@ -354,7 +370,6 @@ function fillDetail() {
     ...[
       pet.id,
       t('frames')(pet.frames),
-      ...((pet.stages ?? 1) > 1 ? [t('stages')(pet.stages)] : []),
       `💬 ${pet.langs.map(l => LANG_NAMES[l]).join(' · ')}`,
     ].map((text, i) => {
       const span = document.createElement('span')
@@ -370,28 +385,72 @@ function fillDetail() {
   detailStop?.()
   clearInterval(bubbleTimer)
   const canvas = $('d-canvas')
+  const bigImg = $('d-img')
   canvas.getContext('2d').clearRect(0, 0, 32, 32)
-  const strip = $('d-stages')
-  strip.replaceChildren()
-  strip.hidden = true
+  bigImg.hidden = true
+  canvas.hidden = false
+  const chips = $('d-chips')
+  const grow = $('d-grow')
+  const growGrid = $('d-grow-grid')
+  for (const el of [chips, grow]) el.hidden = true
+  for (const el of [chips, growGrid]) el.replaceChildren()
+  // 그림이 오기 전에 다시 채워지면(언어 바꾸기) 늦게 온 쪽은 버린다
+  const generation = ++detailGeneration
   framesOf(pet.id)
     .then(f => {
-      if (current !== pet) return
-      const stops = [play(canvas, f, pet.frameMs)]
-      // 단계가 있으면 아래에 단계마다 작은 그림을 나란히, 모두 움직인다
+      if (current !== pet || generation !== detailGeneration) return
+      const stops = []
+      let showStop = null
+      let stage = 0
+      // webp가 있으면 그 그림, 없으면 캔버스에 움직임을 그린다
+      const tile = (frames, label, sub, webp) => {
+        const el = document.createElement('button')
+        el.type = 'button'
+        el.className = 'grow-tile'
+        const ground = document.createElement('div')
+        ground.className = 'ground'
+        const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
+        ground.append(pet.media ? spriteImg(webpOf(pet, webp)) : small)
+        const name = document.createElement('b')
+        name.textContent = label
+        const span = document.createElement('span')
+        span.textContent = sub
+        el.append(ground, name, span)
+        return { el, stop: pet.media ? null : play(small, frames, pet.frameMs) }
+      }
+      // 큰 펫: 고른 단계의 움직임. 칩과 아래 타일이 같은 단계를 가리킨다
+      const select = index => {
+        stage = index
+        showStop?.()
+        showStop = null
+        bigImg.hidden = !pet.media
+        canvas.hidden = Boolean(pet.media)
+        if (pet.media) bigImg.src = webpOf(pet, `stage${stage + 1}-work`)
+        else showStop = play(canvas, f.stages[stage], pet.frameMs)
+        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === stage))
+      }
       if (f.stages.length > 1) {
-        strip.hidden = false
+        chips.hidden = false
+        grow.hidden = false
         f.stages.forEach((stage, i) => {
-          const cell = document.createElement('figure')
-          const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
-          const label = document.createElement('figcaption')
-          label.textContent = t('stage')(i + 1)
-          cell.append(small, label)
-          strip.append(cell)
-          stops.push(play(small, stage, pet.frameMs))
+          const chip = document.createElement('button')
+          chip.type = 'button'
+          chip.dataset.stage = String(i)
+          chip.textContent = t('stage')(i + 1)
+          chip.addEventListener('click', () => select(i))
+          chips.append(chip)
+          const made = tile(stage, t('stage')(i + 1), t('stageRange')[i] ?? '', `stage${i + 1}-work`)
+          made.el.dataset.stage = String(i)
+          made.el.addEventListener('click', () => select(i))
+          growGrid.append(made.el)
+          stops.push(made.stop)
         })
       }
-      detailStop = () => stops.forEach(stop => stop())
+      select(0)
+      detailStop = () => {
+        showStop?.()
+        stops.forEach(stop => stop?.())
+      }
     })
     .catch(() => {})
   const bubble = $('d-bubble')
