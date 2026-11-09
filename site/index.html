@@ -151,7 +151,7 @@ dialog {
 }
 dialog::backdrop { background: rgba(20,16,10,.55); }
 /* 상세: 큰 펫(왼쪽 위) · 정보(오른쪽) · 성장 단계(아래 전체 폭) */
-.detail { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); grid-template-areas: "show info" "grow grow"; }
+.detail { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); grid-template-areas: "show info" "grow grow" "motion motion"; }
 .showcase { grid-area: show; display: grid; gap: 12px; padding: 20px 20px 18px; align-content: start; }
 .detail .stage {
   aspect-ratio: auto; min-height: 380px; position: relative; border-radius: 16px;
@@ -181,6 +181,11 @@ dialog::backdrop { background: rgba(20,16,10,.55); }
 .grow-tile canvas { width: 128px; }
 .grow-tile b { font-size: 14px; }
 .grow-tile span { font-size: 12.5px; color: var(--muted); }
+.motion { grid-area: motion; }
+.motion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.motion-grid .grow-tile { padding: 10px 8px; }
+.motion-grid .grow-tile canvas { width: 72px; }
+.motion-grid .cut { cursor: default; background: transparent; }
 .bubble {
   position: absolute; top: 18px; left: 50%; transform: translateX(-50%); max-width: 90%;
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px;
@@ -216,7 +221,8 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
   .search { flex-basis: 100%; max-width: none; }
   .toolbar > .row:first-child { flex-wrap: wrap; }
   .card { padding: 10px; }
-  .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow"; }
+  .detail { grid-template-columns: minmax(0,1fr); grid-template-areas: "show" "info" "grow" "motion"; }
+  .motion-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
   .detail .stage { min-height: 260px; }
   .detail .stage canvas { width: 60%; }
   .grow-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
@@ -266,19 +272,16 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
     <div class="step">
       <span class="n">01</span>
       <h3 data-t="s1Title"></h3>
-      <p data-t="s1Body"></p>
       <div class="cmd"><code>/plugin install dotchi --marketplace ms1011/dotchi</code><button class="copy sm" data-copy="/plugin install dotchi --marketplace ms1011/dotchi"></button></div>
     </div>
     <div class="step">
       <span class="n">02</span>
       <h3 data-t="s2Title"></h3>
-      <p data-t="s2Body"></p>
       <div class="cmd"><code>/dotchi install &lt;id&gt;</code></div>
     </div>
     <div class="step">
       <span class="n">03</span>
       <h3 data-t="s3Title"></h3>
-      <p data-t="s3Body"></p>
       <div class="cmd"><code>/dotchi share &lt;id&gt;</code></div>
     </div>
   </section>
@@ -323,21 +326,22 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
       <p class="desc" id="d-desc"></p>
       <div class="facts" id="d-facts"></div>
       <div class="install"><code id="d-cmd"></code><button class="copy" id="d-copy"></button></div>
-      <p class="hint" data-t="pasteHint"></p>
+      
       <div class="row">
         <a class="btn btn-ghost" id="d-like" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="color:var(--heart)" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>
           <span id="d-like-n"></span>
-          <span class="need"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span data-t="needGithub"></span></span>
         </a>
         <a class="btn btn-ghost" id="d-zip" href="#" download data-t="zip"></a>
       </div>
-      <p class="hint" data-t="likeHint"></p>
-      <div class="first-time" data-t="firstTime"></div>
     </div>
     <section class="grow" id="d-grow" hidden>
-      <header class="grow-head"><h3 data-t="growTitle"></h3><p class="hint" data-t="growHint"></p></header>
+      <header class="grow-head"><h3 data-t="growTitle"></h3></header>
       <div class="grow-grid" id="d-grow-grid"></div>
+    </section>
+    <section class="grow motion" id="d-motion" hidden>
+      <header class="grow-head"><h3 data-t="motionTitle"></h3></header>
+      <div class="motion-grid" id="d-motion-grid"></div>
     </section>
   </div>
 </dialog>
@@ -352,9 +356,9 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
       </div>
       <p class="desc" id="t-desc"></p>
       <div class="term big" id="t-preview"></div>
-      <p class="hint" id="t-petnote" data-t="petNote"></p>
+      
       <div class="install"><code id="t-cmd"></code><button class="copy" id="t-copy"></button></div>
-      <p class="hint" data-t="themePasteHint"></p>
+      
       <div class="row">
         <a class="btn btn-ghost" id="t-like" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="color:var(--heart)" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3.1 3.1 0 0 1 8 4.6a3.1 3.1 0 0 1 5.5 2.2C13.5 10.7 8 14 8 14Z"/></svg>
@@ -362,8 +366,6 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
         </a>
         <a class="btn btn-ghost" id="t-json" href="#" download data-t="themeDl"></a>
       </div>
-      <p class="hint" data-t="likeHint"></p>
-      <div class="first-time" data-t="firstTime"></div>
     </div>
   </div>
 </dialog>

@@ -225,7 +225,6 @@ function fillThemeDetail() {
   const box = $('t-preview')
   box.replaceChildren()
   for (const mood of MOODS) drawMood(box, theme.look, mood, true)
-  $('t-petnote').hidden = theme.look?.colors?.accent !== 'pet'
   $('t-cmd').textContent = themeInstallCommand(theme.id)
   $('t-like-n').textContent = t('like')(theme.likes)
   $('t-like').href = `${REPO}/issues/${theme.issue}`
@@ -356,7 +355,6 @@ function fillDetail() {
     ...[
       pet.id,
       t('frames')(pet.frames),
-      ...((pet.stages ?? 1) > 1 ? [t('stages')(pet.stages)] : []),
       `💬 ${pet.langs.map(l => LANG_NAMES[l]).join(' · ')}`,
     ].map((text, i) => {
       const span = document.createElement('span')
@@ -376,10 +374,10 @@ function fillDetail() {
   const chips = $('d-chips')
   const grow = $('d-grow')
   const growGrid = $('d-grow-grid')
-  chips.replaceChildren()
-  chips.hidden = true
-  growGrid.replaceChildren()
-  grow.hidden = true
+  const motion = $('d-motion')
+  const motionGrid = $('d-motion-grid')
+  for (const el of [chips, grow, motion]) el.hidden = true
+  for (const el of [chips, growGrid, motionGrid]) el.replaceChildren()
   // 그림이 오기 전에 다시 채워지면(언어 바꾸기) 늦게 온 쪽은 버린다
   const generation = ++detailGeneration
   framesOf(pet.id)
@@ -387,11 +385,68 @@ function fillDetail() {
       if (current !== pet || generation !== detailGeneration) return
       const stops = []
       let showStop = null
-      // 큰 펫: 고른 단계의 움직임. 칩과 아래 타일이 같은 단계를 가리킨다
-      const select = index => {
+      let motionStops = []
+      const view = { stage: 0, motion: 'work' }
+      const tile = (cls, frames, label, sub) => {
+        const el = document.createElement('button')
+        el.type = 'button'
+        el.className = cls
+        const ground = document.createElement('div')
+        ground.className = 'ground'
+        const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
+        ground.append(small)
+        const name = document.createElement('b')
+        name.textContent = label
+        el.append(ground, name)
+        if (sub) {
+          const span = document.createElement('span')
+          span.textContent = sub
+          el.append(span)
+        }
+        if (frames.work) return { el, stop: play(small, frames, pet.frameMs) }
+        paint(small, frames)
+        return { el, stop: null }
+      }
+      const mark = () => {
+        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === view.stage))
+        for (const el of motionGrid.querySelectorAll('[data-motion]')) el.setAttribute('aria-pressed', String(el.dataset.motion === view.motion))
+      }
+      // 큰 펫: 고른 단계, 고른 모션 (쉴 때는 멈춘 그림)
+      const show = () => {
         showStop?.()
-        showStop = play(canvas, f.stages[index], pet.frameMs)
-        for (const el of [...chips.children, ...growGrid.children]) el.setAttribute('aria-pressed', String(Number(el.dataset.stage) === index))
+        showStop = null
+        const stage = f.stages[view.stage]
+        if (view.motion === 'idle') paint(canvas, stage.idle)
+        else showStop = play(canvas, stage, pet.frameMs)
+        mark()
+      }
+      // 모션 칸: 쉴 때 · 일할 때 · 움직임의 각 컷
+      const fillMotion = () => {
+        motionStops.forEach(stop => stop())
+        motionStops = []
+        motionGrid.replaceChildren()
+        const stage = f.stages[view.stage]
+        for (const [key, frames, label] of [['idle', stage.idle, t('motionIdle')], ['work', stage, t('motionWork')]]) {
+          const made = tile('grow-tile', frames, label)
+          made.el.dataset.motion = key
+          made.el.addEventListener('click', () => {
+            view.motion = key
+            show()
+          })
+          if (made.stop) motionStops.push(made.stop)
+          motionGrid.append(made.el)
+        }
+        stage.work.forEach((frame, i) => {
+          const made = tile('grow-tile cut', frame, t('cut')(i + 1))
+          made.el.tabIndex = -1
+          motionGrid.append(made.el)
+        })
+        motion.hidden = false
+      }
+      const select = index => {
+        view.stage = index
+        fillMotion()
+        show()
       }
       if (f.stages.length > 1) {
         chips.hidden = false
@@ -403,27 +458,17 @@ function fillDetail() {
           chip.textContent = t('stage')(i + 1)
           chip.addEventListener('click', () => select(i))
           chips.append(chip)
-          const tile = document.createElement('button')
-          tile.type = 'button'
-          tile.className = 'grow-tile'
-          tile.dataset.stage = String(i)
-          const small = Object.assign(document.createElement('canvas'), { width: 32, height: 32 })
-          const name = document.createElement('b')
-          name.textContent = t('stage')(i + 1)
-          const range = document.createElement('span')
-          range.textContent = t('stageRange')[i] ?? ''
-          const ground = document.createElement('div')
-          ground.className = 'ground'
-          ground.append(small)
-          tile.append(ground, name, range)
-          tile.addEventListener('click', () => select(i))
-          growGrid.append(tile)
-          stops.push(play(small, stage, pet.frameMs))
+          const made = tile('grow-tile', stage, t('stage')(i + 1), t('stageRange')[i] ?? '')
+          made.el.dataset.stage = String(i)
+          made.el.addEventListener('click', () => select(i))
+          growGrid.append(made.el)
+          stops.push(made.stop)
         })
       }
       select(0)
       detailStop = () => {
         showStop?.()
+        motionStops.forEach(stop => stop())
         stops.forEach(stop => stop())
       }
     })
