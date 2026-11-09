@@ -122,16 +122,16 @@ test('themeFromQuery·themeInstallCommand', () => {
   assert.equal(themeInstallCommand('ocean'), '/dotchi theme install ocean')
 })
 
-test('previewOf: 기본 모양이면 플러그인과 같은 상태 줄, 강조색 pet은 라벤더', () => {
+test('previewOf: 기본 모양(얼굴 없음)이면 플러그인과 같은 상태 줄, 세션 줄은 하트로 시작, 강조색 pet은 라벤더', () => {
   const ok = previewOf({}, MOODS[0], LABELS)
   assert.equal(ok.status, '🐾 ★★☆ · ♥♥♡♡♡ 40% · ⚡ 41% · ⎇ main')
   assert.deepEqual(ok.rows[0], [
-    { text: '(•ᴗ•)', color: '#b8a6ff' },
+    { text: '♥', color: '#b8a6ff' },
     { text: ' 세션 ', color: '#9a9ab0' },
     { text: '▰▰▰▰▱▱▱▱▱▱ 40%', color: '#8fd9b6' },
   ])
   const danger = previewOf({}, MOODS[2], LABELS)
-  assert.equal(danger.status, '🐾 ★★★ · ♥♥♥♥♥ 93% (×_×) /compact · ⚡ 97% 🥱 · ⎇ main')
+  assert.equal(danger.status, '🐾 ★★★ · ♥♥♥♥♥ 93% /compact · ⚡ 97% 🥱 · ⎇ main')
   assert.equal(danger.rows[0]![0]!.color, '#ff8fa3')
   assert.deepEqual(danger.rows[1]!.at(-1), { text: ' 🥱', color: '#9a9ab0' })
 })

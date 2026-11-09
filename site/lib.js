@@ -66,7 +66,7 @@ const FALLBACK_ACCENT = '#b8a6ff'
 /** 플러그인의 기본 모양과 같다: 빠진 칸은 이것으로 */
 export const DEFAULT_LOOK = {
   colors: { ok: '#8fd9b6', warn: '#ffd86b', danger: '#ff8fa3', dim: '#9a9ab0', accent: 'pet' },
-  faces: { ok: '(•ᴗ•)', warn: '(•_•;)', danger: '(×_×)' },
+  faces: { ok: '', warn: '', danger: '' },
   hearts: ['♥', '♡'],
   bar: ['▰', '▱'],
   symbols: { week: '⚡', tired: '🥱', reset: '↻', time: '⏱' },
@@ -110,7 +110,8 @@ export const previewOf = (look, mood, labels) => {
   }
   const { level, context, week } = mood
   const weekLevel = week >= 95 ? 'danger' : week >= 80 ? 'warn' : 'ok'
-  const face = level === 'ok' ? '' : ` ${faces[level]}${level === 'danger' ? ' /compact' : ''}`
+  // 얼굴이 빈 값이면 얼굴 없음: 상태 줄엔 /compact만, 패널 세션 줄 앞은 하트 기호
+  const face = level === 'ok' ? '' : `${faces[level] === '' ? '' : ` ${faces[level]}`}${level === 'danger' ? ' /compact' : ''}`
   const tired = weekLevel === 'danger' ? ` ${symbols.tired}` : ''
   // 플러그인처럼 아이콘 뒤에 진화 단계 별 (주간 33%부터 2단계, 66%부터 3단계)
   const stage = week >= 66 ? 3 : week >= 33 ? 2 : 1
@@ -118,7 +119,7 @@ export const previewOf = (look, mood, labels) => {
   const status = `🐾 ${stars} · ${fill(hearts, context, 5)} ${context}%${face} · ${symbols.week} ${week}%${tired} · ⎇ main`
   const rows = [
     [
-      { text: faces[level], color: level === 'ok' ? paint('accent') : paint(level) },
+      { text: faces[level] === '' ? hearts[0] : faces[level], color: level === 'ok' ? paint('accent') : paint(level) },
       { text: ` ${labels.full} `, color: paint('dim') },
       { text: `${fill(bar, context, 10)} ${context}%`, color: paint(level) },
       { text: level === 'danger' ? ' /compact' : '', color: paint('dim') },
